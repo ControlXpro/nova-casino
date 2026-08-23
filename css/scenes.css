@@ -7,7 +7,7 @@
 .pk-pitch{
   position:relative;width:100%;aspect-ratio:16/9;overflow:hidden;
   border-radius:var(--r-lg);border:1px solid var(--line);
-  background:url("art/_pk_goal.webp") center/cover, #0a1410;
+  background:url("../art/_pk_goal.webp") center/cover, #0a1410;
   box-shadow:inset 0 0 60px rgba(0,0,0,.6),0 18px 40px rgba(0,0,0,.5);
   user-select:none}
 .pk-pitch::after{content:"";position:absolute;inset:0;pointer-events:none;
@@ -16,7 +16,7 @@
 /* keeper */
 .pk-keeper{position:absolute;left:50%;bottom:20%;z-index:3;
   width:20%;aspect-ratio:1;margin-left:-10%;
-  background:url("art/_pk_keeper.webp") center/contain no-repeat;
+  background:url("../art/_pk_keeper.webp") center/contain no-repeat;
   filter:drop-shadow(0 8px 12px rgba(0,0,0,.6));
   transition:transform .42s cubic-bezier(.3,.7,.4,1.1)}
 .pk-keeper.dive.left   {transform:translateX(-115%) rotate(-32deg)}
@@ -30,7 +30,7 @@
 .pk-ball{position:absolute;left:50%;top:92%;z-index:4;
   width:9%;aspect-ratio:1;
   transform:translate(-50%,-50%);
-  background:url("art/_ball.webp") center/contain no-repeat;
+  background:url("../art/_ball.webp") center/contain no-repeat;
   filter:drop-shadow(0 6px 8px rgba(0,0,0,.55))}
 
 /* aim points */
@@ -71,9 +71,9 @@
 
 /* ── sprite-backed tiles (mines, tower) ── */
 .tile.gem, .tile.bomb{background-size:74% 74%;background-position:center;background-repeat:no-repeat}
-.tile.gem{background-image:url("art/_gem.webp");
+.tile.gem{background-image:url("../art/_gem.webp");
   background-color:rgba(46,224,106,.12);color:transparent}
-.tile.bomb{background-image:url("art/_bomb.webp");
+.tile.bomb{background-image:url("../art/_bomb.webp");
   background-color:rgba(255,77,106,.14);color:transparent}
 .tile.gem::first-line,.tile.bomb::first-line{color:transparent}
 
@@ -81,8 +81,8 @@
 .coin3d-wrap{perspective:900px;width:132px;height:132px;margin:0 auto}
 .coin-face{width:100%;height:100%;background-size:contain;background-repeat:no-repeat;
   background-position:center;filter:drop-shadow(0 8px 14px rgba(0,0,0,.55))}
-.coin-face.heads{background-image:url("art/_coin_h.webp")}
-.coin-face.tails{background-image:url("art/_coin_t.webp")}
+.coin-face.heads{background-image:url("../art/_coin_h.webp")}
+.coin-face.tails{background-image:url("../art/_coin_t.webp")}
 .coin-face.flipping{animation:coinTumble .34s linear infinite}
 @keyframes coinTumble{to{transform:rotateY(360deg)}}
 .coin-face.landed{animation:coinLand2 .6s var(--pop)}
@@ -91,9 +91,9 @@
 /* ── rock paper scissors ── */
 .rps-hand{width:112px;height:112px;background-size:contain;background-repeat:no-repeat;
   background-position:center;filter:drop-shadow(0 8px 14px rgba(0,0,0,.5))}
-.rps-hand.rock{background-image:url("art/_rps_rock.webp")}
-.rps-hand.paper{background-image:url("art/_rps_paper.webp")}
-.rps-hand.scissors{background-image:url("art/_rps_scissors.webp")}
+.rps-hand.rock{background-image:url("../art/_rps_rock.webp")}
+.rps-hand.paper{background-image:url("../art/_rps_paper.webp")}
+.rps-hand.scissors{background-image:url("../art/_rps_scissors.webp")}
 .rps-hand.me{transform:scaleX(-1)}
 .rps-hand.shaking{animation:rpsShake .28s ease-in-out infinite}
 @keyframes rpsShake{0%,100%{transform:translateY(0) rotate(0)}
@@ -106,12 +106,12 @@
 .rps-vs{font-size:14px;font-weight:800;letter-spacing:.14em;color:var(--faint)}
 
 /* ── wheel of fortune / big six ── */
-.fw.art{background-image:url("art/_wheel.webp");background-size:contain;
+.fw.art{background-image:url("../art/_wheel.webp");background-size:contain;
   background-repeat:no-repeat;background-position:center;border:0;
   filter:drop-shadow(0 12px 26px rgba(0,0,0,.6))}
 
 /* ── plinko ── */
-.plinko-ball-art{background:url("art/_orb.webp") center/contain no-repeat}
+.plinko-ball-art{background:url("../art/_orb.webp") center/contain no-repeat}
 
 @media(prefers-reduced-motion:reduce){
   .pk-keeper,.pk-ball{transition:none!important}
