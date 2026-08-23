@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Nova Casino — Play-Money Social Casino</title>
+<meta name="description" content="Nova Casino — 56 free-to-play casino games. Virtual credits only. No real money, no deposits, no cashouts.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><text y='26' font-size='26'>🎰</text></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<div id="ageGate" class="age-gate">
+  <div class="age-card">
+    <div class="age-logo">🎰</div>
+    <h1>NOVA <span>CASINO</span></h1>
+    <p class="age-sub">A free-to-play social casino</p>
+    <ul class="age-facts">
+      <li><b>No real money.</b> Every balance is virtual play credits with zero cash value.</li>
+      <li><b>No deposits, no withdrawals,</b> no payment processing of any kind.</li>
+      <li>Nothing here can be exchanged for money, crypto or prizes.</li>
+      <li>Practice play does not predict results in real gambling.</li>
+    </ul>
+    <button id="ageAccept" class="btn btn-gold btn-lg">I'm 18+ — Enter</button>
+    <p class="age-help">If gambling is a problem for you: <a href="https://www.begambleaware.org" target="_blank" rel="noopener">BeGambleAware.org</a> · <a href="https://www.gamblingtherapy.org" target="_blank" rel="noopener">Gambling Therapy</a></p>
+  </div>
+</div>
+
+<header class="topbar">
+  <button class="hamburger" id="navToggle" aria-label="Menu">☰</button>
+  <a class="brand" href="#/lobby">
+    <span class="brand-mark">🎰</span>
+    <span class="brand-txt">NOVA<b>CASINO</b></span>
+  </a>
+  <div class="search-wrap">
+    <input id="search" type="search" placeholder="Search 56 games…" autocomplete="off">
+  </div>
+  <div class="userchip" id="userChip"></div>
+  <div class="wallet" id="walletBox">
+    <div class="wallet-inner">
+      <span class="wallet-label">BALANCE</span>
+      <span class="wallet-amt" id="balance">10,000.00</span>
+    </div>
+    <button class="btn btn-gold btn-sm" id="topupBtn">+ Credits</button>
+  </div>
+</header>
+
+<div class="layout">
+  <aside class="sidebar" id="sidebar">
+    <nav id="catNav"></nav>
+    <div class="side-stats">
+      <h4>Session</h4>
+      <div class="srow"><span>Wagered</span><b id="statWagered">0.00</b></div>
+      <div class="srow"><span>Returned</span><b id="statReturned">0.00</b></div>
+      <div class="srow"><span>Net</span><b id="statNet">0.00</b></div>
+      <div class="srow"><span>Rounds</span><b id="statRounds">0</b></div>
+      <button class="btn btn-ghost btn-sm" id="resetBtn">Reset account</button>
+    </div>
+    <p class="side-note">Play credits only. No cash value.</p>
+  </aside>
+
+  <main id="main">
+    <section id="lobby" class="lobby"></section>
+    <section id="gameView" class="game-view" hidden></section>
+  </main>
+</div>
+
+<footer class="foot">
+  <p><b>Nova Casino is a free social-casino simulation.</b> All balances are virtual credits with no monetary value. There is no real-money wagering, no deposits, no withdrawals and no prizes. Success in this game does not imply future success at real-money gambling.</p>
+  <p class="foot-links">18+ · <a href="https://www.begambleaware.org" target="_blank" rel="noopener">BeGambleAware</a> · <a href="https://www.gamblingtherapy.org" target="_blank" rel="noopener">Gambling Therapy</a> · <a href="https://www.ncpgambling.org" target="_blank" rel="noopener">NCPG (US)</a></p>
+</footer>
+
+<div id="toasts" class="toasts"></div>
+
+<script type="module" src="js/app.js"></script>
+</body>
+</html>
