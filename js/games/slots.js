@@ -215,8 +215,10 @@ function mountSlot(theme) {
       onAction: () => doSpin(),
     });
 
-    /** Pixel height of one symbol cell, read from the live layout. */
-    const cellH = () => strips[0].strip.firstChild.getBoundingClientRect().height || 78;
+    /* The strip is offset in CSS cell units, not measured pixels: measuring a
+       cell mid-layout was landing the reel a fraction off and slicing symbols
+       across the row boundaries. */
+    const OFFSET = `translateY(calc(var(--cell) * ${-(STRIP - ROWS)}))`;
 
     /**
      * Spin one reel: fill the strip with random symbols, drop the final ROWS
@@ -224,22 +226,20 @@ function mountSlot(theme) {
      */
     function spinReel(r, column) {
       const { strip, imgs } = strips[r];
-      const h = cellH();
       for (let i = 0; i < STRIP; i++) imgs[i].src = sym(rndInt(8));
       // the last ROWS cells of the strip are what ends up in the window
       for (let y = 0; y < ROWS; y++) imgs[STRIP - ROWS + y].src = sym(column[y]);
 
       strip.style.transition = 'none';
-      strip.style.transform = `translateY(${-(STRIP - ROWS) * h}px)`;
+      strip.style.transform = OFFSET;
       void strip.offsetHeight;                       // flush before animating
       strip.classList.add('spinning');
-      return h;
     }
 
     function landReel(r, dur) {
       const { strip } = strips[r];
       strip.style.transition = `transform ${dur}ms cubic-bezier(.16,.85,.3,1.06)`;
-      strip.style.transform = 'translateY(0px)';
+      strip.style.transform = 'translateY(0)';
       strip.classList.remove('spinning');
     }
 

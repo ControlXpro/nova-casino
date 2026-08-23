@@ -66,20 +66,33 @@ def detect_grid(img: Image.Image):
     return cols, rows
 
 
-def ahash(img: Image.Image) -> int:
-    """Average hash — cheap perceptual fingerprint for de-duplication."""
-    small = img.convert("L").resize((8, 8), Image.LANCZOS)
-    data = list(small.getdata())
+def core(img: Image.Image) -> Image.Image:
+    """Centre crop — every tile shares the same decorative frame, so comparing
+    whole cells makes different symbols look alike. Only the interior matters."""
+    w, h = img.size
+    m = 0.20
+    return img.crop((int(w * m), int(h * m), int(w * (1 - m)), int(h * (1 - m))))
+
+
+def sig(img: Image.Image):
+    """Fingerprint of a symbol: shape bits plus a coarse colour signature."""
+    c = core(img)
+    g = c.convert("L").resize((12, 12), Image.LANCZOS)
+    data = list(g.getdata())
     avg = sum(data) / len(data)
     bits = 0
     for i, v in enumerate(data):
         if v > avg:
             bits |= 1 << i
-    return bits
+    rgb = c.convert("RGB").resize((4, 4), Image.LANCZOS)
+    return bits, list(rgb.getdata())
 
 
-def dist(a: int, b: int) -> int:
-    return bin(a ^ b).count("1")
+def dist(a, b) -> float:
+    """Hamming on the shape bits + mean absolute colour difference."""
+    shape = bin(a[0] ^ b[0]).count("1") / 144.0
+    colour = sum(abs(x - y) for pa, pb in zip(a[1], b[1]) for x, y in zip(pa, pb))
+    return shape + (colour / (16 * 3 * 255.0))
 
 
 def ink(cell: Image.Image) -> float:
@@ -103,22 +116,30 @@ def slice_sheet(theme: str, url: str) -> int:
                 continue
             cells.append(c)
 
-    picked, hashes = [], []
-    for c in cells:
-        h = ahash(c)
-        if any(dist(h, prev) < 6 for prev in hashes):
-            continue                    # near-duplicate of one we already took
-        hashes.append(h)
-        picked.append(c)
-        if len(picked) == WANT:
-            break
+    # Farthest-point sampling: take the most distinctive cell, then repeatedly
+    # take whichever remaining cell is least like everything already chosen.
+    # This maximises variety instead of just rejecting exact repeats.
+    sigs = [sig(c) for c in cells]
+    if not sigs:
+        print(f"  {theme:<22} NO CELLS")
+        return 0
 
-    if len(picked) < WANT:              # top up with the least-similar leftovers
-        for c in cells:
-            if len(picked) == WANT:
-                break
-            if c not in picked:
-                picked.append(c)
+    mean_d = [sum(dist(a, b) for b in sigs) / len(sigs) for a in sigs]
+    order = [max(range(len(sigs)), key=lambda i: mean_d[i])]
+    while len(order) < min(WANT, len(sigs)):
+        best, best_d = None, -1.0
+        for i in range(len(sigs)):
+            if i in order:
+                continue
+            d = min(dist(sigs[i], sigs[j]) for j in order)
+            if d > best_d:
+                best, best_d = i, d
+        order.append(best)
+
+    picked = [cells[i] for i in order]
+    spread = min(
+        min(dist(sigs[i], sigs[j]) for j in order if j != i) for i in order
+    ) if len(order) > 1 else 0
 
     d = OUT / theme
     d.mkdir(parents=True, exist_ok=True)
@@ -129,7 +150,7 @@ def slice_sheet(theme: str, url: str) -> int:
         c.save(p, "WEBP", quality=82, method=6)
         total += p.stat().st_size
     print(f"  {theme:<22} grid {len(cols)}x{len(rows)}  cells {len(cells):>2}  "
-          f"unique {len(hashes):>2}  wrote {min(len(picked), WANT)}  {total // 1024} KB")
+          f"spread {spread:.3f}  wrote {min(len(picked), WANT)}  {total // 1024} KB")
     return total
 
 
