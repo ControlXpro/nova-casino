@@ -1,6 +1,7 @@
 /* Table & lottery games: European + American roulette, sic bo, craps, keno, bingo. */
 import { el, clear, fmt, sleep, rndInt, shuffle, wallet, round2, toast } from '../core.js';
 import { betPanel, msgLine, rules, optGrid, DICE_FACES, rollDie } from '../ui.js';
+import { play, ticker } from '../sound.js';
 
 const G = (o) => o;
 
@@ -11,7 +12,7 @@ const US_ORDER = [0, 28, 9, 26, 30, 11, 7, 20, 32, 17, 5, 22, 34, 15, 3, 24, 36,
 
 const colorOf = (n) => (n === 0 || n === '00' ? 'green' : RED.has(n) ? 'red' : 'black');
 
-function roulette({ id, order, american }) {
+function roulette({ id, order, american, laPartage = false, lightning = false }) {
   return function mount(root) {
     const bets = new Map();
     let spinning = false, rotation = 0;
@@ -78,6 +79,20 @@ function roulette({ id, order, american }) {
     const msg = msgLine();
     const histRow = el('div.history');
     const totalOut = el('div.readout');
+    const luckyRow = el('div.lucky-row');
+    let lucky = new Map();          // number -> multiplier, lightning only
+
+    function rollLucky() {
+      lucky = new Map();
+      if (!lightning) return;
+      const pool = shuffle(order.filter((n) => n !== 0 && n !== '00'));
+      const n = 1 + rndInt(5);
+      const mults = [50, 100, 150, 200, 300, 400, 500];
+      for (let i = 0; i < n; i++) lucky.set(pool[i], mults[rndInt(mults.length)]);
+      clear(luckyRow);
+      luckyRow.append(el('span.lucky-tag', {}, 'LUCKY NUMBERS'));
+      for (const [num, m] of lucky) luckyRow.append(el('div.lucky', {}, `${num}`, el('b', {}, `${m}x`)));
+    }
 
     const bp = betPanel({
       start: 5, min: 1, max: 500, label: 'CHIP', action: 'SPIN', onAction: spin,
@@ -90,6 +105,7 @@ function roulette({ id, order, american }) {
     let lastBets = null;
     function place(key) {
       if (spinning) return;
+      play('chip');
       const chip = bp.value;
       if (!wallet.bet(chip)) { toast('Not enough credits.', 'lose'); return; }
       bets.set(key, round2((bets.get(key) || 0) + chip));
@@ -160,7 +176,9 @@ function roulette({ id, order, american }) {
       ball.style.transform = `rotate(${ballTurns}deg) translateY(-88px)`;
       hub.textContent = '…';
       hub.classList.remove('landed');
+      const stopTick = ticker('wheelTick', 85);
       await sleep(4100);
+      stopTick();
       hub.textContent = String(n);
       hub.classList.add('landed');
       hub.style.background = colorOf(n) === 'red' ? 'linear-gradient(140deg,#e34a63,#8e1a2e)'
@@ -169,7 +187,19 @@ function roulette({ id, order, american }) {
 
       let payout = 0; const hits = [];
       for (const [k, amt] of bets) {
-        if (wins(k, n)) { payout += amt * payFor(k); hits.push(k.startsWith('n:') ? `straight ${k.slice(2)}` : k); }
+        if (!wins(k, n)) {
+          // French rule: even-money bets get half back when zero lands
+          if (laPartage && n === 0 && ['red', 'black', 'odd', 'even', 'low', 'high'].includes(k)) {
+            payout += amt / 2;
+            hits.push(k + ' (la partage)');
+          }
+          continue;
+        }
+        const boost = lightning && k.startsWith('n:') && lucky.has(n) ? lucky.get(n) + 1 : payFor(k);
+        payout += amt * boost;
+        hits.push(k.startsWith('n:')
+          ? `straight ${k.slice(2)}${boost !== 36 ? ` @ ${boost - 1}x` : ''}`
+          : k);
       }
       if (payout > 0) wallet.pay(payout);
       const net = payout - staked;
@@ -188,18 +218,27 @@ function roulette({ id, order, american }) {
         }, String(h)));
       }
       bets.clear(); paintChips();
+      rollLucky();
       spinning = false; bp.unlock();
     }
 
     paintChips();
-    root.append(el('div.roulette-wrap', {}, wheel, histRow, board, outside),
+    rollLucky();
+    root.append(el('div.roulette-wrap', {}, wheel, luckyRow, histRow, board, outside),
       msg.node, totalOut, bp.node,
-      rules(american ? 'AMERICAN ROULETTE' : 'EUROPEAN ROULETTE',
+      rules(lightning ? 'LIGHTNING ROULETTE'
+        : laPartage ? 'FRENCH ROULETTE'
+          : american ? 'AMERICAN ROULETTE' : 'EUROPEAN ROULETTE',
         `Set the chip size, then click numbers or outside boxes to stack chips. Chips are taken from your balance as you place them.`,
         `Straight up <code>35:1</code> · dozens and columns <code>2:1</code> · red/black, odd/even, high/low <code>1:1</code>.`,
         american
           ? `A double-zero wheel: 38 pockets including <code>0</code> and <code>00</code>. House edge <code>5.26%</code>.`
           : `A single-zero wheel: 37 pockets. House edge <code>2.70%</code> — the better of the two.`,
+        laPartage
+          ? `<b>La partage:</b> when zero lands, every even-money bet gets <b>half the stake back</b>. That halves the house edge on those bets to <code>1.35%</code>.`
+          : lightning
+            ? `Before each spin, <b>1 to 5 lucky numbers</b> are struck with a multiplier from <code>50x</code> to <code>500x</code>. A straight-up bet on a struck number pays that multiplier instead of 35:1 — the trade is that straight-up wins on ordinary numbers still pay 35:1 while the extra risk is funded by the multiplier round.`
+            : `<b>CLEAR</b> returns unspun chips. <b>REBET</b> repeats your last layout.`,
         `<b>CLEAR</b> returns unspun chips. <b>REBET</b> repeats your last layout.`));
   };
 }
@@ -230,6 +269,7 @@ function sicBo(root) {
     const stake = bp.value;
     if (!bp.take()) return;
     busy = true; bp.lock(); msg.clear();
+    play('diceRoll');
     [...cubes.children].forEach((c) => c.classList.add('roll'));
     for (let i = 0; i < 8; i++) {
       [...cubes.children].forEach((c) => { c.textContent = DICE_FACES[rndInt(6)]; });
@@ -358,6 +398,14 @@ function craps(root) {
 }
 
 /* ============================================================ KENO */
+/* Power Keno trades the small consolation prizes for much steeper top ends. */
+const POWER_KENO_PAY = {
+  1: [0, 3], 2: [0, 0, 14], 3: [0, 0, 1, 46], 4: [0, 0, 0, 5, 120],
+  5: [0, 0, 0, 2, 20, 420], 6: [0, 0, 0, 0, 7, 70, 1200],
+  7: [0, 0, 0, 0, 2, 16, 160, 2500], 8: [0, 0, 0, 0, 0, 8, 60, 500, 7000],
+  9: [0, 0, 0, 0, 0, 5, 22, 160, 1400, 15000],
+  10: [0, 0, 0, 0, 0, 2, 14, 60, 350, 2000, 25000],
+};
 const KENO_PAY = {
   1: [0, 3], 2: [0, 0, 12], 3: [0, 0, 1, 42], 4: [0, 0, 1, 4, 100],
   5: [0, 0, 0, 2, 15, 300], 6: [0, 0, 0, 1, 5, 50, 800],
@@ -365,8 +413,8 @@ const KENO_PAY = {
   9: [0, 0, 0, 0, 1, 4, 15, 100, 800, 8000],
   10: [0, 0, 0, 0, 0, 2, 10, 40, 200, 1000, 10000],
 };
-function keno(root) {
-  const id = 'keno';
+function keno({ id, pay = KENO_PAY, label = 'KENO' }) {
+  return function mount(root) {
   const picks = new Set();
   let busy = false;
   const grid = el('div.tiles', { style: { gridTemplateColumns: 'repeat(10, auto)' } });
@@ -395,7 +443,7 @@ function keno(root) {
   function info() {
     out.textContent = `${picks.size}/10 numbers selected`;
     clear(payRow);
-    const tbl = KENO_PAY[picks.size];
+    const tbl = pay[picks.size];
     if (!tbl) return;
     tbl.forEach((m, hits) => {
       if (!m) return;
@@ -429,10 +477,11 @@ function keno(root) {
     let hits = 0;
     for (const n of drawn) {
       tiles[n].classList.add(picks.has(n) ? 'hit' : 'dim');
+      if (picks.has(n)) play('gem');
       if (picks.has(n)) hits++;
       await sleep(55);
     }
-    const mult = KENO_PAY[picks.size][hits] || 0;
+    const mult = pay[picks.size][hits] || 0;
     const payout = round2(stake * mult);
     if (payout > 0) { wallet.pay(payout); msg.win(payout - stake, `${hits}/${picks.size} hits — ${mult}× ·`, stake); }
     else msg.lose(`${hits}/${picks.size} hits — no prize`);
@@ -442,16 +491,17 @@ function keno(root) {
 
   info();
   root.append(grid, out, msg.node, bp.node, payRow,
-    rules('KENO',
+    rules(label,
       `Pick <b>1 to 10</b> numbers from 80, then 20 are drawn. The more you pick, the steeper the ladder.`,
       `Green tiles are your hits, dim tiles are drawn numbers you missed. The paytable below updates with your selection.`,
       `Top prize: <code>10 of 10 = 10,000×</code> your stake.`,
       `Keno carries a high house edge by design — typically <code>20–30%</code>. It is a lottery, not a table game.`));
+  };
 }
 
 /* ============================================================ BINGO 75 */
-function bingo(root) {
-  const id = 'bingo-75';
+function bingo({ id, max = 75, calls = 30, label = 'BINGO 75' }) {
+  return function mount(root) {
   let busy = false, card = [], marks = [];
   const cardWrap = el('div.bingo-card');
   const calledRow = el('div.called');
@@ -461,7 +511,8 @@ function bingo(root) {
   function newCard() {
     card = []; marks = [];
     for (let c = 0; c < 5; c++) {
-      const pool = shuffle([...Array(15)].map((_, i) => c * 15 + i + 1)).slice(0, 5);
+      const per = max / 5;
+      const pool = shuffle([...Array(per)].map((_, i) => c * per + i + 1)).slice(0, 5);
       card.push(pool); marks.push([false, false, false, false, false]);
     }
     marks[2][2] = true;
@@ -469,7 +520,7 @@ function bingo(root) {
   }
   function paint() {
     clear(cardWrap);
-    for (const h of ['B', 'I', 'N', 'G', 'O']) cardWrap.append(el('div.bh', {}, h));
+    for (const h of (max === 90 ? ['1', '2', '3', '4', '5'] : ['B', 'I', 'N', 'G', 'O'])) cardWrap.append(el('div.bh', {}, h));
     for (let r = 0; r < 5; r++) for (let c = 0; c < 5; c++) {
       const free = r === 2 && c === 2;
       cardWrap.append(el('div.bcell' + (free ? '.free' : marks[c][r] ? '.mark' : ''), {},
@@ -494,18 +545,19 @@ function bingo(root) {
     busy = true; bp.lock(); msg.clear();
     newCard(); clear(calledRow);
 
-    const balls = shuffle([...Array(75)].map((_, i) => i + 1)).slice(0, 30);
+    const balls = shuffle([...Array(max)].map((_, i) => i + 1)).slice(0, calls);
     for (const b of balls) {
-      const col = Math.floor((b - 1) / 15);
+      const col = Math.floor((b - 1) / (max / 5));
       const row = card[col].indexOf(b);
       if (row >= 0) marks[col][row] = true;
       [...calledRow.children].forEach((n) => n.classList.remove('new'));
       calledRow.append(el('div.cball.new', {}, String(b)));
+      play('tickUp');
       paint();
       await sleep(90);
     }
     const s = score();
-    let mult = 0, note = 'No pattern in 30 balls';
+    let mult = 0, note = `No pattern in ${calls} balls`;
     if (s.full) { mult = 60; note = 'FULL HOUSE!'; }
     else if (s.lines >= 2) { mult = 6; note = `${s.lines} lines`; }
     else if (s.lines === 1) { mult = 2; note = '1 line'; }
@@ -519,19 +571,24 @@ function bingo(root) {
 
   newCard();
   root.append(cardWrap, calledRow, msg.node, bp.node,
-    rules('BINGO 75',
-      `You buy one 5×5 card with a free centre star. <b>30 of 75 balls</b> are called.`,
+    rules(label,
+      `You buy one 5×5 card with a free centre star. <b>${calls} of ${max} balls</b> are called.`,
       `Pays: any single line (row, column or diagonal) <code>2×</code> · four corners <code>3×</code> · two or more lines <code>6×</code> · full house <code>60×</code>.`,
-      `Numbers are drawn without replacement, column B = 1–15, I = 16–30, N = 31–45, G = 46–60, O = 61–75.`,
+      `Numbers are drawn without replacement across ${max} balls, five columns of ${max / 5}.`,
       `Best pattern found pays — prizes do not stack.`));
+  };
 }
 
 /* ============================================================ exports */
 export const tableGames = [
   G({ id: 'roulette-eu', name: 'European Roulette', cat: 'table', icon: '🎡', art: 'linear-gradient(160deg,#3d1220,#0b0d1c)', rtp: 97.3, vol: 'Medium', tags: ['hot'], mount: roulette({ id: 'roulette-eu', order: EU_ORDER, american: false }) }),
   G({ id: 'roulette-us', name: 'American Roulette', cat: 'table', icon: '🎡', art: 'linear-gradient(160deg,#1a2c4d,#0b0d1c)', rtp: 94.7, vol: 'Medium', mount: roulette({ id: 'roulette-us', order: US_ORDER, american: true }) }),
+  G({ id: 'roulette-fr', name: 'French Roulette', cat: 'table', icon: '🎡', art: 'linear-gradient(160deg,#2a1240,#0b0d1c)', rtp: 98.6, vol: 'Medium', tags: ['new'], mount: roulette({ id: 'roulette-fr', order: EU_ORDER, american: false, laPartage: true }) }),
+  G({ id: 'roulette-lightning', name: 'Lightning Roulette', cat: 'table', icon: '⚡', art: 'linear-gradient(160deg,#3d1250,#0b0d1c)', rtp: 97.1, vol: 'High', tags: ['hot'], mount: roulette({ id: 'roulette-lightning', order: EU_ORDER, american: false, lightning: true }) }),
   G({ id: 'sic-bo', name: 'Sic Bo', cat: 'table', icon: '🎲', art: 'linear-gradient(160deg,#4d1230,#0b0d1c)', rtp: 97.2, vol: 'High', mount: sicBo }),
   G({ id: 'craps', name: 'Craps', cat: 'table', icon: '🎲', art: 'linear-gradient(160deg,#123d2a,#0b0d1c)', rtp: 98.6, vol: 'Medium', mount: craps }),
-  G({ id: 'keno', name: 'Keno', cat: 'lottery', icon: '🔢', art: 'linear-gradient(160deg,#2a1d52,#0b0d1c)', rtp: 92.0, vol: 'High', mount: keno }),
-  G({ id: 'bingo-75', name: 'Bingo 75', cat: 'lottery', icon: '🎱', art: 'linear-gradient(160deg,#4d3312,#0b0d1c)', rtp: 93.0, vol: 'Medium', mount: bingo }),
+  G({ id: 'keno', name: 'Keno', cat: 'lottery', icon: '🔢', art: 'linear-gradient(160deg,#2a1d52,#0b0d1c)', rtp: 92.0, vol: 'High', mount: keno({ id: 'keno' }) }),
+  G({ id: 'keno-power', name: 'Power Keno', cat: 'lottery', icon: '⚡', art: 'linear-gradient(160deg,#3d1d6b,#0b0d1c)', rtp: 91.0, vol: 'High', tags: ['new'], mount: keno({ id: 'keno-power', pay: POWER_KENO_PAY, label: 'POWER KENO' }) }),
+  G({ id: 'bingo-75', name: 'Bingo 75', cat: 'lottery', icon: '🎱', art: 'linear-gradient(160deg,#4d3312,#0b0d1c)', rtp: 93.0, vol: 'Medium', mount: bingo({ id: 'bingo-75' }) }),
+  G({ id: 'bingo-90', name: 'Bingo 90', cat: 'lottery', icon: '🎱', art: 'linear-gradient(160deg,#123d4d,#0b0d1c)', rtp: 92.5, vol: 'Medium', mount: bingo({ id: 'bingo-90', max: 90, calls: 40, label: 'BINGO 90' }) }),
 ];

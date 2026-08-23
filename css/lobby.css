@@ -1,0 +1,154 @@
+/* ═══════════════════════════════════════════════════════════
+   Lobby furniture: game art, bonuses, tournaments, boards,
+   simulated seats, andar bahar lanes, lightning roulette.
+   Loaded last.
+   ═══════════════════════════════════════════════════════════ */
+
+/* ── real game art on the cards ── */
+.card-art{overflow:hidden}
+.card-img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:1;
+  transition:transform .4s var(--ease),filter .3s var(--ease)}
+.card:hover .card-img{transform:scale(1.09)}
+.card-art .em{position:relative;z-index:0;opacity:.9}
+.card-art::after{z-index:2}
+.card-art:has(.card-img) .em{opacity:0}
+
+.gv-ico{position:relative;overflow:hidden;padding:0}
+.gv-ico img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.gv-ico span{position:relative;z-index:2}
+.gv-ico:has(img) span{opacity:0}
+
+/* ── generic panel ── */
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:var(--r-lg);
+  padding:var(--s4);display:flex;flex-direction:column;gap:var(--s3)}
+.panel-head{display:flex;align-items:center;gap:var(--s2);flex-wrap:wrap}
+.panel-head h3{font-size:15px;font-weight:800;flex:1}
+.panel-tag{font-size:10.5px;font-weight:700;color:var(--gold);
+  background:rgba(255,197,49,.12);border:1px solid rgba(255,197,49,.3);
+  padding:3px 9px;border-radius:var(--r-pill)}
+.panel-note{margin:0;font-size:11px;line-height:1.55;color:var(--faint)}
+.sim-tag{font-size:9px;font-weight:800;letter-spacing:.12em;color:var(--dim);
+  background:var(--surface-2);border:1px solid var(--line);
+  padding:3px 8px;border-radius:var(--r-pill)}
+.two-col{display:grid;grid-template-columns:1fr 1.35fr;gap:var(--s3);margin-bottom:var(--s4)}
+
+/* ── daily bonus ── */
+.bonus-track{display:grid;grid-template-columns:repeat(7,1fr);gap:5px}
+.bonus-day{position:relative;display:grid;justify-items:center;gap:2px;padding:9px 2px;
+  border-radius:var(--r-sm);background:var(--bg);border:1px solid var(--line-soft);
+  font-size:10px;color:var(--faint)}
+.bonus-day .bd-amt{font-family:"JetBrains Mono",monospace;font-size:11px;font-weight:700;color:var(--dim)}
+.bonus-day.done{background:linear-gradient(180deg,rgba(46,224,106,.18),transparent);
+  border-color:rgba(46,224,106,.4)}
+.bonus-day.done .bd-amt{color:var(--win)}
+.bd-tick{position:absolute;top:2px;right:4px;font-size:9px;color:var(--win)}
+.bonus-day.next{background:linear-gradient(180deg,rgba(255,197,49,.2),transparent);
+  border-color:var(--gold);animation:nextPulse 1.8s ease-in-out infinite alternate}
+.bonus-day.next .bd-amt{color:var(--gold)}
+@keyframes nextPulse{to{box-shadow:0 0 18px rgba(255,197,49,.32)}}
+
+/* ── big-win board ── */
+.board-body{display:grid;gap:3px}
+.board-row{display:grid;align-items:center;gap:var(--s2);width:100%;
+  grid-template-columns:26px 20px minmax(70px,1fr) minmax(70px,1.2fr) 54px auto;
+  padding:8px 10px;border:0;border-radius:var(--r-sm);background:var(--bg);
+  color:var(--txt);font-size:12px;text-align:left;
+  transition:background .16s var(--ease)}
+.board-row:hover{background:var(--surface-2)}
+.br-pos{font-family:"JetBrains Mono",monospace;font-weight:700;color:var(--faint);text-align:center}
+.br-pos.top{color:var(--gold)}
+.br-name{font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.br-game{color:var(--faint);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:11px}
+.br-mult{font-family:"JetBrains Mono",monospace;color:var(--cyan);font-size:11px;text-align:right}
+.br-win{font-family:"JetBrains Mono",monospace;color:var(--win);font-weight:700;text-align:right}
+
+/* ── tournaments ── */
+.tourney-grid{display:grid;gap:var(--s3);margin-bottom:var(--s4);
+  grid-template-columns:repeat(auto-fit,minmax(280px,1fr))}
+.tourney{display:flex;flex-direction:column;gap:var(--s3);padding:var(--s4);
+  background:var(--surface);border:1px solid var(--line);border-radius:var(--r-lg);
+  position:relative;overflow:hidden}
+.tourney::before{content:"";position:absolute;inset:0;pointer-events:none;
+  background:radial-gradient(90% 60% at 100% 0%,rgba(255,197,49,.10),transparent 60%)}
+.tourney>*{position:relative}
+.tv-top{display:flex;align-items:flex-start;gap:var(--s3)}
+.tv-icon{font-size:30px;line-height:1}
+.tv-name-main{font-size:15px;font-weight:800}
+.tv-blurb{font-size:11.5px;color:var(--faint);line-height:1.45;margin-top:2px}
+.tv-pool{margin-left:auto;text-align:right;flex:none}
+.tv-pool span{display:block;font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:var(--faint)}
+.tv-pool b{font-family:"JetBrains Mono",monospace;font-size:14px;color:var(--gold)}
+.tv-meta{display:flex;align-items:center;gap:var(--s2);font-size:11px;color:var(--faint)}
+.tv-clock{color:var(--txt);font-weight:700;font-variant-numeric:tabular-nums}
+.tv-meta .sim-tag{margin-left:auto}
+.tv-board{display:grid;gap:2px}
+.tv-row{display:grid;grid-template-columns:24px 18px 1fr auto;align-items:center;gap:6px;
+  padding:5px 8px;border-radius:6px;background:var(--bg);font-size:11.5px}
+.tv-pos{font-family:"JetBrains Mono",monospace;color:var(--gold);font-weight:700}
+.tv-name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--dim)}
+.tv-pts{font-family:"JetBrains Mono",monospace;color:var(--txt);font-size:11px}
+
+/* ── promo cards ── */
+.promo-grid{display:grid;gap:var(--s3);margin-bottom:var(--s4);
+  grid-template-columns:repeat(auto-fit,minmax(200px,1fr))}
+.promo-card{padding:var(--s4);border-radius:var(--r-lg);
+  background-color:var(--surface);border:1px solid var(--line)}
+.pc-icon{font-size:26px;line-height:1;margin-bottom:var(--s2)}
+.pc-title{font-size:14px;font-weight:800}
+.pc-sub{font-size:11px;font-weight:700;color:var(--gold);margin-top:2px}
+.pc-body{margin:var(--s2) 0 0;font-size:11.5px;line-height:1.55;color:var(--faint)}
+
+/* ── simulated seats at the table ── */
+.bot-row{gap:clamp(6px,2vw,18px);margin-bottom:2px;opacity:.94}
+.bot-box{transform:scale(.82);transform-origin:top center}
+.bot-seat .seat-name{color:rgba(255,255,255,.55);font-size:9px;letter-spacing:.06em;
+  text-transform:none;max-width:96px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.bot-seat .seat-cards{min-height:84px}
+.bot-box .felt-spot{width:clamp(64px,12vw,84px);border-style:dotted}
+.bot-box .spot-label{font-size:8.5px}
+
+/* ── andar bahar lanes ── */
+.ab-lane{display:flex;align-items:center;gap:var(--s2)}
+.ab-lane>span{flex:none;width:52px;font-size:9px;font-weight:800;letter-spacing:.1em;
+  color:rgba(255,255,255,.5);text-shadow:0 1px 2px rgba(0,0,0,.5)}
+.ab-run{display:flex;gap:3px;flex:1;overflow-x:auto;min-height:34px;padding:2px;
+  background:rgba(0,0,0,.22);border-radius:var(--r-sm)}
+.ab-run::-webkit-scrollbar{height:0}
+.ab-card{flex:none;min-width:26px;height:30px;display:grid;place-items:center;
+  border-radius:4px;background:linear-gradient(160deg,#fff,#e6eaf5);color:#131a2a;
+  font-size:10.5px;font-weight:800;box-shadow:0 2px 5px rgba(0,0,0,.4);
+  animation:cardSlide .3s var(--pop) both}
+.ab-card.red{color:#d81e46}
+
+/* ── lightning roulette ── */
+.lucky-row{display:flex;align-items:center;gap:6px;flex-wrap:wrap;justify-content:center;
+  min-height:30px}
+.lucky-tag{font-size:9px;font-weight:800;letter-spacing:.12em;color:var(--faint)}
+.lucky{display:flex;align-items:center;gap:4px;padding:3px 9px;border-radius:var(--r-pill);
+  background:linear-gradient(180deg,rgba(139,92,246,.32),rgba(139,92,246,.14));
+  border:1px solid #8b5cf6;font-family:"JetBrains Mono",monospace;font-size:11px;font-weight:700;
+  animation:luckyPop .45s var(--pop) both}
+.lucky b{color:var(--gold);font-size:10px}
+@keyframes luckyPop{from{opacity:0;transform:scale(.6)}to{opacity:1;transform:none}}
+
+/* ── sound toggle ── */
+#soundBtn.muted{color:var(--faint)}
+#soundBtn.muted svg{stroke:var(--lose)}
+
+/* ── responsive ── */
+@media(max-width:900px){
+  .two-col{grid-template-columns:1fr}
+}
+@media(max-width:719px){
+  .board-row{grid-template-columns:22px 18px 1fr 50px auto;font-size:11px}
+  .br-game{display:none}
+  .bonus-track{grid-template-columns:repeat(4,1fr)}
+  .bonus-day:nth-child(n+5){display:none}
+  .bot-box{transform:scale(.7)}
+  .bot-row{gap:2px}
+  .tv-pool b{font-size:12px}
+}
+@media(prefers-reduced-motion:reduce){
+  .bonus-day.next,.lucky,.ab-card{animation:none!important}
+  .card:hover .card-img{transform:none}
+}

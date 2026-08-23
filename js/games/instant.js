@@ -2,6 +2,7 @@
    coin flip, scratch card, tower, penalty shootout, rock-paper-scissors. */
 import { el, clear, fmt, fmtx, rnd, rndInt, pick, shuffle, sleep, wallet, round2, weighted, toast } from '../core.js';
 import { betPanel, msgLine, rules, optGrid } from '../ui.js';
+import { play, ticker } from '../sound.js';
 
 const G = (o) => o;
 const EDGE = 0.99;   // 1% house edge on the provably-fair style games
@@ -10,6 +11,7 @@ const EDGE = 0.99;   // 1% house edge on the provably-fair style games
 function crash(root) {
   const id = 'crash';
   let live = false, stake = 0, mult = 1, crashAt = 0, raf = 0, t0 = 0, cashed = false;
+  let stopFlight = null;
   const history = [];
 
   const canvas = el('canvas');
@@ -68,6 +70,7 @@ function crash(root) {
     live = true; cashed = false; mult = 1; crashAt = rollCrash();
     stateEl.textContent = 'IN FLIGHT'; multEl.style.color = 'var(--accent, var(--gold))';
     box.classList.add('flying'); box.classList.remove('busted');
+    stopFlight = ticker('tickUp', 220);
     msg.clear(); bp.setAction('CASH OUT', 'btn-green'); bp.lock(); bp.actionBtn.disabled = false;
     t0 = performance.now();
     raf = requestAnimationFrame(tick);
@@ -77,7 +80,7 @@ function crash(root) {
     cashed = true;
     const payout = round2(stake * mult);
     wallet.pay(payout);
-    multEl.style.color = 'var(--win)';
+    multEl.style.color = 'var(--win)'; play('cashout');
     msg.win(payout - stake, `Cashed out at ${fmtx(mult)} ·`, stake);
     wallet.logResult(id, stake, payout);
   }
@@ -87,6 +90,7 @@ function crash(root) {
     mult = crashAt; multEl.textContent = fmtx(crashAt);
     stateEl.textContent = 'CRASHED';
     box.classList.remove('flying'); box.classList.add('busted');
+    stopFlight?.(); stopFlight = null; play('explode');
     if (!cashed) { multEl.style.color = 'var(--lose)'; msg.lose(`Crashed at ${fmtx(crashAt)}`); wallet.logResult(id, stake, 0); }
     draw();
     history.unshift(crashAt); if (history.length > 12) history.pop();
@@ -154,13 +158,13 @@ function mines(root) {
   function reveal(i) {
     if (!live || tiles[i].classList.contains('done')) return;
     if (field.includes(i)) {
-      tiles[i].className = 'tile bomb done'; tiles[i].textContent = '💣';
+      tiles[i].className = 'tile bomb done'; tiles[i].textContent = '💣'; play('explode');
       for (const b of field) if (b !== i) { tiles[b].className = 'tile bomb done dim'; tiles[b].textContent = '💣'; }
       msg.lose(`Hit a mine after ${picked} safe pick${picked === 1 ? '' : 's'}`);
       wallet.logResult(id, stake, 0);
       end();
     } else {
-      tiles[i].className = 'tile gem done'; tiles[i].textContent = '💎';
+      tiles[i].className = 'tile gem done'; tiles[i].textContent = '💎'; play('gem');
       picked++;
       info();
       msg.set(`${picked} safe · ${fmtx(multAt(picked))} banked`, 'win');
@@ -194,9 +198,16 @@ function mines(root) {
 
 /* ============================================================ PLINKO */
 const PLINKO_ROWS = 16;
-const PLINKO_PAY = [110, 41, 10, 5, 3, 1.5, 1, 0.5, 0.3, 0.5, 1, 1.5, 3, 5, 10, 41, 110];
-function plinko(root) {
-  const id = 'plinko';
+/* Three risk profiles over the same 16-row board. Each is a real binomial
+   payout table returning ~99%; only the variance differs. */
+const PLINKO_PAYS = {
+  medium: [110, 41, 10, 5, 3, 1.5, 1, 0.5, 0.3, 0.5, 1, 1.5, 3, 5, 10, 41, 110],
+  low: [16, 9, 2, 1.4, 1.4, 1.2, 1.1, 1, 0.5, 1, 1.1, 1.2, 1.4, 1.4, 2, 9, 16],
+  high: [1000, 130, 26, 9, 4, 2, 0.2, 0.2, 0.2, 0.2, 0.2, 2, 4, 9, 26, 130, 1000],
+};
+function plinko({ id = 'plinko', risk = 'medium' }) {
+  return function mount(root) {
+  const PLINKO_PAY = PLINKO_PAYS[risk];
   let busy = false;
   const canvas = el('canvas');
   const box = el('div.plinko-box', {}, canvas);
@@ -252,7 +263,7 @@ function plinko(root) {
     render({ x, y: h - 22 });
 
     const mult = PLINKO_PAY[slot];
-    buckets.children[slot].classList.add('flash');
+    buckets.children[slot].classList.add('flash'); play('coin');
     const payout = round2(stake * mult);
     if (payout > 0) wallet.pay(payout);
     if (payout > stake) msg.win(payout - stake, `${mult}× bucket ·`, stake);
@@ -264,11 +275,12 @@ function plinko(root) {
 
   render(null);
   root.append(box, buckets, msg.node, bp.node,
-    rules('PLINKO',
+    rules('PLINKO — ' + risk.toUpperCase() + ' RISK',
       `A ball drops through <b>16 rows of pegs</b>, bouncing left or right at each one with equal probability.`,
       `Where it lands is a binomial distribution — the centre is by far the most likely, which is why it pays <code>0.3×</code>.`,
-      `Edge buckets pay <code>110×</code> but land roughly once in <code>65,536</code> drops.`,
+      `Edge buckets pay <code>${PLINKO_PAY[0]}×</code> but land roughly once in <code>65,536</code> drops.`,
       `Theoretical return <code>99.0%</code> across the whole board.`));
+  };
 }
 
 /* ============================================================ DICE */
@@ -441,7 +453,7 @@ function coinFlip(root) {
     const stake = bp.value;
     if (!bp.take()) return;
     busy = true; bp.lock(); msg.clear();
-    coin.classList.add('coin3d');
+    coin.classList.add('coin3d'); play('whoosh');
     for (let i = 0; i < 12; i++) { coin.textContent = i % 2 ? '👑' : '🦅'; await sleep(70); }
     const res = rndInt(2) ? 'heads' : 'tails';
     coin.textContent = res === 'heads' ? '👑' : '🦅';
@@ -464,8 +476,19 @@ function coinFlip(root) {
 const SC_PRIZES = [2, 5, 10, 25, 100, 500];
 const SC_WEIGHTS = [0.68, 0.22, 0.07, 0.022, 0.006, 0.002];
 const SC_SYMS = ['🍒', '🔔', '⭐', '💎', '👑', '🎰', '🍀', '💰'];
-function scratch(root) {
-  const id = 'scratch-gold';
+const SC_CARDS = {
+  'scratch-gold': { label: 'SCRATCH GOLD', chance: 0.177, prizes: SC_PRIZES, weights: SC_WEIGHTS,
+    syms: SC_SYMS, top: 500 },
+  'scratch-diamonds': { label: 'DIAMOND SCRATCH', chance: 0.132, prizes: [3, 8, 20, 60, 250, 1500],
+    weights: [0.66, 0.23, 0.07, 0.028, 0.009, 0.003],
+    syms: ['💎', '💍', '🔷', '🔶', '✨', '👑', '🥇', '🪙'], top: 1500 },
+  'scratch-lucky7': { label: 'LUCKY SEVENS', chance: 0.245, prizes: [1.5, 3, 7, 20, 77, 777],
+    weights: [0.62, 0.26, 0.09, 0.024, 0.005, 0.001],
+    syms: ['7️⃣', '🍒', '🔔', '🍋', '⭐', '🎰', '🍀', '💵'], top: 777 },
+};
+function scratch({ id }) {
+  const CFG = SC_CARDS[id];
+  return function mount(root) {
   let busy = false, layout = [], revealed = 0, prize = 0, winSym = null, currentStake = 0;
   const grid = el('div.scratch-grid');
   const msg = msgLine();
@@ -486,12 +509,12 @@ function scratch(root) {
     busy = true; bp.lock(); btnAll.hidden = false; msg.set('Scratch the panels', 'push');
     revealed = 0;
 
-    const isWin = rnd() < 0.177;
+    const isWin = rnd() < CFG.chance;
     prize = 0; winSym = null;
-    const syms = shuffle([...SC_SYMS]);
+    const syms = shuffle([...CFG.syms]);
     layout = [];
     if (isWin) {
-      prize = SC_PRIZES[weighted(SC_WEIGHTS)];
+      prize = CFG.prizes[weighted(CFG.weights)];
       winSym = syms[0];
       layout = [winSym, winSym, winSym];
       // fill the rest with at most two of any other symbol
@@ -513,7 +536,7 @@ function scratch(root) {
 
   function reveal(i) {
     if (!busy || cellEls[i].classList.contains('rev')) return;
-    cellEls[i].classList.add('rev');
+    cellEls[i].classList.add('rev'); play('cardFlip');
     cellEls[i].textContent = layout[i];
     if (++revealed === 9) settle();
   }
@@ -532,11 +555,12 @@ function scratch(root) {
 
   root.append(grid, msg.node,
     el('div', { style: { display: 'flex', gap: '10px', alignItems: 'flex-end', flexWrap: 'wrap' } }, bp.node, btnAll),
-    rules('SCRATCH GOLD',
+    rules(CFG.label,
       `Buy a card and scratch nine panels. <b>Three matching symbols</b> anywhere on the card wins.`,
-      `Prizes: <code>2×</code>, <code>5×</code>, <code>10×</code>, <code>25×</code>, <code>100×</code> or the top <code>500×</code>.`,
-      `Roughly <b>1 card in 5.6</b> is a winner. The prize is decided when you buy — scratching only reveals it.`,
+      `Prizes run from <code>${CFG.prizes[0]}×</code> up to the top prize of <code>${CFG.top}×</code>.`,
+      `Roughly <b>1 card in ${(1 / CFG.chance).toFixed(1)}</b> is a winner. The prize is decided when you buy — scratching only reveals it.`,
       `Theoretical return <code>94%</code>.`));
+  };
 }
 
 /* ============================================================ TOWER */
@@ -589,7 +613,7 @@ function tower(root) {
       wallet.logResult(id, stake, 0);
       return end();
     }
-    rows[r][c].className = 'tile gem done'; rows[r][c].textContent = '🪜';
+    rows[r][c].className = 'tile gem done'; rows[r][c].textContent = '🪜'; play('gem');
     level++;
     if (level >= LEVELS) return cashOut();
     msg.set(`Level ${level} cleared — ${fmtx(multAt(level))}`, 'win');
@@ -667,7 +691,7 @@ function penalty(root) {
       wallet.logResult(id, stake, 0);
       return end();
     }
-    zoneEls[z].className = 'tile hit'; zoneEls[z].textContent = '⚽';
+    zoneEls[z].className = 'tile hit'; zoneEls[z].textContent = '⚽'; play('winSmall');
     scored++;
     msg.set(`GOAL! ${fmtx(multAt(scored))} banked`, 'win');
     paint();
@@ -738,12 +762,16 @@ function rps(root) {
 export const instantGames = [
   G({ id: 'crash', name: 'Crash', cat: 'instant', icon: '🚀', art: 'linear-gradient(160deg,#121c3d,#0b0d1c)', rtp: 99.0, vol: 'High', tags: ['hot'], mount: crash }),
   G({ id: 'mines', name: 'Mines', cat: 'instant', icon: '💣', art: 'linear-gradient(160deg,#123d33,#0b0d1c)', rtp: 99.0, vol: 'High', tags: ['hot'], mount: mines }),
-  G({ id: 'plinko', name: 'Plinko', cat: 'instant', icon: '🔺', art: 'linear-gradient(160deg,#2a1d52,#0b0d1c)', rtp: 99.0, vol: 'High', mount: plinko }),
+  G({ id: 'plinko', name: 'Plinko', cat: 'instant', icon: '🔺', art: 'linear-gradient(160deg,#2a1d52,#0b0d1c)', rtp: 99.0, vol: 'High', mount: plinko({ id: 'plinko' }) }),
+  G({ id: 'plinko-low', name: 'Plinko Low Risk', cat: 'instant', icon: '🔻', art: 'linear-gradient(160deg,#123d33,#0b0d1c)', rtp: 99.0, vol: 'Low', mount: plinko({ id: 'plinko-low', risk: 'low' }) }),
+  G({ id: 'plinko-high', name: 'Plinko High Risk', cat: 'instant', icon: '🔺', art: 'linear-gradient(160deg,#4d1236,#0b0d1c)', rtp: 99.0, vol: 'High', tags: ['hot'], mount: plinko({ id: 'plinko-high', risk: 'high' }) }),
   G({ id: 'dice', name: 'Dice', cat: 'instant', icon: '🎲', art: 'linear-gradient(160deg,#3d1230,#0b0d1c)', rtp: 99.0, vol: 'Medium', mount: diceGame }),
   G({ id: 'limbo', name: 'Limbo', cat: 'instant', icon: '📈', art: 'linear-gradient(160deg,#12303d,#0b0d1c)', rtp: 99.0, vol: 'High', mount: limbo }),
   G({ id: 'wheel', name: 'Wheel of Fortune', cat: 'instant', icon: '🎡', art: 'linear-gradient(160deg,#3d2c12,#0b0d1c)', rtp: 97.5, vol: 'Low', mount: wheelGame }),
   G({ id: 'coin-flip', name: 'Coin Flip', cat: 'instant', icon: '🪙', art: 'linear-gradient(160deg,#3d3312,#0b0d1c)', rtp: 99.0, vol: 'Low', mount: coinFlip }),
-  G({ id: 'scratch-gold', name: 'Scratch Gold', cat: 'lottery', icon: '🎫', art: 'linear-gradient(160deg,#4d2a12,#0b0d1c)', rtp: 94.0, vol: 'High', mount: scratch }),
+  G({ id: 'scratch-gold', name: 'Scratch Gold', cat: 'lottery', icon: '🎫', art: 'linear-gradient(160deg,#4d2a12,#0b0d1c)', rtp: 94.0, vol: 'High', mount: scratch({ id: 'scratch-gold' }) }),
+  G({ id: 'scratch-diamonds', name: 'Diamond Scratch', cat: 'lottery', icon: '💎', art: 'linear-gradient(160deg,#123a4d,#0b0d1c)', rtp: 94.0, vol: 'High', tags: ['new'], mount: scratch({ id: 'scratch-diamonds' }) }),
+  G({ id: 'scratch-lucky7', name: 'Lucky Sevens', cat: 'lottery', icon: '7️⃣', art: 'linear-gradient(160deg,#4d1224,#0b0d1c)', rtp: 94.0, vol: 'Medium', mount: scratch({ id: 'scratch-lucky7' }) }),
   G({ id: 'tower', name: 'Tower', cat: 'instant', icon: '🗼', art: 'linear-gradient(160deg,#1d2a52,#0b0d1c)', rtp: 99.0, vol: 'High', tags: ['new'], mount: tower }),
   G({ id: 'penalty', name: 'Penalty Shootout', cat: 'instant', icon: '⚽', art: 'linear-gradient(160deg,#123d1d,#0b0d1c)', rtp: 99.0, vol: 'Medium', tags: ['new'], mount: penalty }),
   G({ id: 'rps', name: 'Rock Paper Scissors', cat: 'instant', icon: '✊', art: 'linear-gradient(160deg,#4d1236,#0b0d1c)', rtp: 98.0, vol: 'Low', mount: rps }),

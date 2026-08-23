@@ -3,12 +3,15 @@ import { el, $, $$, clear, fmt, wallet, onWallet, toast } from './core.js';
 import { auth, validate } from './auth.js';
 import { themeFor } from './themes.js';
 import { installRipple } from './fx.js';
+import { sound, play } from './sound.js';
+import { dailyBonusCard, promoCards, tournaments, bigWinBoard } from './lobby-sections.js';
 import { slotGames } from './games/slots.js';
 import { cardGames } from './games/cards.js';
 import { tableGames } from './games/table.js';
 import { instantGames } from './games/instant.js';
+import { moreGames } from './games/more.js';
 
-const GAMES = [...instantGames, ...cardGames, ...tableGames, ...slotGames];
+const GAMES = [...instantGames, ...moreGames, ...cardGames, ...tableGames, ...slotGames];
 const byId = new Map(GAMES.map((g) => [g.id, g]));
 
 /* ── icons ──────────────────────────────────────────────────
@@ -59,17 +62,19 @@ onWallet(paintWallet);
 
 /* ── promo rail ───────────────────────────────────────────── */
 const SLIDES = [
-  { kicker: 'Welcome', art: '🎰', bg: 'linear-gradient(100deg,#122045,#1f6dff33 60%,#0b0f1a)',
-    h: ['Play ', '56 casino games', ' — for free.'],
+  { kicker: 'Welcome', art: '🎰',
+    bg: 'linear-gradient(100deg,#0b0f1aee,#0b0f1a66 55%,transparent), url("art/_hero.webp") center/cover',
+    h: ['Play ', '106 casino games', ' — for free.'],
     p: 'Slots, blackjack, roulette, crash, mines and more. Every balance is play credits: nothing here costs money, and nothing here pays money.',
     cta: 'Browse all games', go: 'all' },
   { kicker: 'Open source', art: '🎲', bg: 'linear-gradient(100deg,#0f2a1e,#2ee06a2e 60%,#0b0f1a)',
     h: ['Real casino maths, ', 'fully open', '.'],
     p: 'Every result comes from the browser crypto RNG. The whole engine is on GitHub — read it, run it, check it yourself.',
     cta: 'Read the source', href: 'https://github.com/ControlXpro/nova-casino' },
-  { kicker: 'Instant win', art: '🚀', bg: 'linear-gradient(100deg,#2a1230,#8b5cf633 60%,#0b0f1a)',
-    h: ['Crash, Mines, Plinko — ', 'one tap', ' to play.'],
-    p: 'Eleven fast games priced on exact inverse odds with a flat 1% edge. No spin-up, no waiting, no deposit.',
+  { kicker: 'Tournaments', art: '🏆',
+    bg: 'linear-gradient(100deg,#0b0f1aee,#0b0f1a66 55%,transparent), url("art/_tournament.webp") center/cover',
+    h: ['Daily ', 'tournaments', ' and streak bonuses.'],
+    p: 'Claim a bonus every day, climb the boards, and play thirteen instant games priced on exact inverse odds.',
     cta: 'Play instant games', go: 'instant' },
 ];
 function promoRail() {
@@ -141,7 +146,12 @@ function gameCard(g, i) {
     style: { '--d': Math.min(i, 14) * 28 + 'ms' },
   },
     badge,
-    el('div.card-art', { style: { background: g.art } }, el('span.em', { 'aria-hidden': 'true' }, g.icon)),
+    el('div.card-art', { style: { background: g.art } },
+      el('img.card-img', {
+        src: `art/${g.id}.webp`, alt: '', loading: 'lazy', decoding: 'async',
+        onerror: (e) => { e.target.remove(); },
+      }),
+      el('span.em', { 'aria-hidden': 'true' }, g.icon)),
     el('div.card-body', {},
       el('div.card-title', {}, g.name),
       el('div.card-meta', {}, el('span.vol', {}, g.vol), el('span.play', {}, 'PLAY'))));
@@ -169,7 +179,13 @@ function chipRail() {
   return rail;
 }
 
+const activeTimers = [];
+function stopTimers() {
+  while (activeTimers.length) activeTimers.pop()?.stop?.();
+}
+
 function renderLobby() {
+  stopTimers();
   const lobby = $('#lobby');
   clear(lobby);
   $('#gameView').hidden = true;
@@ -192,6 +208,17 @@ function renderLobby() {
     if (t) lobby.append(t);
     lobby.append(chipRail());
     lobby.append(section('flame', 'Popular now', inCat('popular')));
+
+    /* bonuses + simulated boards */
+    lobby.append(el('div.sec-head', {}, el('h3', {}, ico('ticket'), 'Bonuses & tournaments')));
+    lobby.append(el('div.two-col', {},
+      dailyBonusCard(() => renderLobby()),
+      bigWinBoard(GAMES, (id) => { location.hash = '#/game/' + id; })));
+    const tv = tournaments((c) => setCat(c));
+    activeTimers.push(tv);
+    lobby.append(tv);
+    lobby.append(promoCards());
+
     lobby.append(section('zap', 'Instant win', inCat('instant')));
     lobby.append(section('cards', 'Table games', inCat('table')));
     lobby.append(section('spade', 'Poker', inCat('poker')));
@@ -216,6 +243,7 @@ function setCat(key) {
 function renderGame(id) {
   const g = byId.get(id);
   if (!g) { location.hash = '#/lobby'; return; }
+  stopTimers();
   const view = $('#gameView');
   clear(view);
   $('#lobby').hidden = true;
@@ -230,7 +258,10 @@ function renderGame(id) {
   view.style.setProperty('--accent', t.accent);
   view.append(
     el('div.gv-head', {},
-      el('div.gv-ico', { 'aria-hidden': 'true', style: { background: t.bg } }, g.icon),
+      el('div.gv-ico', { 'aria-hidden': 'true', style: { background: t.bg } },
+        el('img', { src: `art/${g.id}.webp`, alt: '', loading: 'lazy',
+          onerror: (e) => e.target.remove() }),
+        el('span', {}, g.icon)),
       el('div', {},
         el('h2', {}, g.name),
         el('div.gv-sub', {},
@@ -409,6 +440,17 @@ function boot() {
     ($('#sidebar').classList.contains('open') ? closeNav() : openNav()));
   $('#scrim').addEventListener('click', closeNav);
   addEventListener('keydown', (e) => { if (e.key === 'Escape') closeNav(); });
+
+  const sndBtn = $('#soundBtn');
+  const paintSound = () => {
+    sndBtn.innerHTML = sound.enabled
+      ? '<svg viewBox="0 0 24 24"><path d="M11 5 6 9H3v6h3l5 4V5Z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/><path d="M18.5 5.5a9 9 0 0 1 0 13"/></svg>'
+      : '<svg viewBox="0 0 24 24"><path d="M11 5 6 9H3v6h3l5 4V5Z"/><path d="m16 9 5 6M21 9l-5 6"/></svg>';
+    sndBtn.setAttribute('aria-label', sound.enabled ? 'Mute sound' : 'Unmute sound');
+    sndBtn.classList.toggle('muted', !sound.enabled);
+  };
+  sndBtn.addEventListener('click', () => { sound.toggle(); paintSound(); });
+  paintSound();
 
   $('#topupBtn').addEventListener('click', () => {
     wallet.topUp(5000);

@@ -1,6 +1,6 @@
 # 🎰 Nova Casino
 
-**A free-to-play social casino. 56 games. Zero real money.**
+**A free-to-play social casino. 106 games. Zero real money.**
 
 Nova Casino is a static, client-side casino simulation. Every balance is virtual
 play credits with **no cash value**. There is no payment processing, no deposits,
@@ -13,19 +13,36 @@ no withdrawals, no prizes, and no way to convert anything here into money.
 
 ---
 
-## The games (56)
+## The games (106)
 
 | Category | Count | Titles |
 |---|---|---|
-| **Slots** | 28 | Book of Sunrise, Neon Fruits, Dragon's Hoard, Pharaoh's Gold, Wild Buffalo, Sweet Cluster, Pirate's Bounty, Aztec Sun, Wolf Moon, Diamond Sevens, Gates of Fortune, Lucky Koi, Space Miners, Viking Fury, Safari King, Mystic Fairy, Cash Vault, Wild West Gold, Joker Bells, Ocean Riches, Samurai Blade, Voodoo Nights, Bonanza Mine, Frozen Fortune, Cleopatra's Eye, Retro Vegas, Reel Fisher, Fire & Ice Reels |
-| **Table** | 8 | Blackjack Classic, Double Deck Blackjack, Baccarat, European Roulette, American Roulette, Sic Bo, Craps, Red Dog, Casino War |
-| **Poker** | 5 | Jacks or Better, Deuces Wild, Joker Poker, Three Card Poker, Caribbean Stud |
-| **Instant** | 11 | Crash, Mines, Plinko, Dice, Limbo, Wheel of Fortune, Coin Flip, Tower, Penalty Shootout, Rock Paper Scissors, Hi-Lo |
-| **Lottery** | 3 | Keno, Bingo 75, Scratch Gold |
+| **Slots** | 58 | Book of Sunrise, Neon Fruits, Dragon's Hoard, Pharaoh's Gold, Wild Buffalo, Sweet Cluster, Pirate's Bounty, Aztec Sun, Wolf Moon, Diamond Sevens, Gates of Fortune, Lucky Koi, Space Miners, Viking Fury, Safari King, Mystic Fairy, Cash Vault, Wild West Gold, Joker Bells, Ocean Riches, Samurai Blade, Voodoo Nights, Bonanza Mine, Frozen Fortune, Cleopatra's Eye, Retro Vegas, Reel Fisher, Fire & Ice Reels |
+| **Table** | 17 | Blackjack Classic, Double Deck Blackjack, Baccarat, European Roulette, American Roulette, Sic Bo, Craps, Red Dog, Casino War |
+| **Poker** | 11 | Jacks or Better, Deuces Wild, Joker Poker, Three Card Poker, Caribbean Stud |
+| **Instant** | 13 | Crash, Mines, Plinko, Dice, Limbo, Wheel of Fortune, Coin Flip, Tower, Penalty Shootout, Rock Paper Scissors, Hi-Lo |
+| **Lottery** | 7 | Keno, Bingo 75, Scratch Gold |
 
 Every game has its own themed stage — background, accent colour, decorative
 motif and bespoke animations — plus a rules panel stating its payouts and
 mechanics.
+
+## Art, sound and atmosphere
+
+- **Game art** — all 106 thumbnails plus the hero and tournament backgrounds are
+  AI-generated (Higgsfield `z_image`), then cover-cropped to 4:3 and re-encoded
+  as WebP by `tools/art.py`. The whole library is ~3 MB, about 19 KB a card.
+  Regenerate or extend it with `python tools/art.py <manifest.json>`.
+- **Sound** — every effect in `js/sound.js` is synthesised at runtime with the
+  Web Audio API (oscillators, filtered noise, envelopes). No audio files ship at
+  all. Audio stays suspended until the first gesture, and there is a mute toggle
+  in the header that persists.
+- **Simulated players** — `js/players.js` generates table companions and the
+  big-win board locally. They are bots, and every surface that shows them is
+  labelled `SIMULATED`. No invented result is ever presented as a real player's.
+- **Bonuses** — the daily bonus is a genuine feature: one claim per calendar day
+  with a seven-day streak ladder from 500 to 5,000 credits, stored per account.
+  Tournaments and their boards are decorative and marked as such.
 
 ## Design
 

@@ -125,6 +125,38 @@ export const wallet = {
     save(); emit('up');
   },
 
+  /* ── daily bonus ──────────────────────────────────────────
+     A real, claimable feature: one claim per calendar day, with a streak
+     that grows the reward. Play credits only, like everything else. */
+  get daily() {
+    const today = new Date().toISOString().slice(0, 10);
+    const last = state.dailyDate || null;
+    let streak = state.dailyStreak || 0;
+    if (last) {
+      const gap = Math.round((Date.parse(today) - Date.parse(last)) / 86400000);
+      if (gap > 1) streak = 0;          // missed a day, streak resets
+    }
+    const day = Math.min(streak, 6) + 1;
+    return {
+      available: last !== today,
+      streak,
+      day,
+      amount: [500, 750, 1000, 1500, 2000, 3000, 5000][day - 1],
+    };
+  },
+  claimDaily() {
+    const d = this.daily;
+    if (!d.available) return 0;
+    const today = new Date().toISOString().slice(0, 10);
+    const gap = state.dailyDate
+      ? Math.round((Date.parse(today) - Date.parse(state.dailyDate)) / 86400000) : 99;
+    state.dailyStreak = gap === 1 ? (state.dailyStreak || 0) + 1 : 1;
+    state.dailyDate = today;
+    state.balance = round2(state.balance + d.amount);
+    save(); emit('up');
+    return d.amount;
+  },
+
   logResult(gameId, stake, payout) {
     state.recent.unshift({ g: gameId, s: stake, p: payout });
     if (state.recent.length > 40) state.recent.length = 40;

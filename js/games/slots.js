@@ -3,6 +3,7 @@
    ships many skins over a handful of maths. */
 import { el, clear, fmt, rnd, rndInt, weighted, sleep, wallet, toast } from '../core.js';
 import { betPanel, msgLine, rules } from '../ui.js';
+import { play, ticker } from '../sound.js';
 
 /* 20 fixed paylines, row index per reel */
 const LINES = [
@@ -117,6 +118,38 @@ export const SLOT_THEMES = [
   T('retro-vegas', 'Retro Vegas', 'low', '#301433', ['🍒', '🍇', '🔔', '🎰', '💵', '🎲'], '⭐', '🎫'),
   T('reel-fisher', 'Reel Fisher', 'med', '#123028', ['🪱', '🎣', '🥾', '🦆', '🐸', '🐟'], '🚤', '💵', ['new']),
   T('fire-and-ice', 'Fire & Ice Reels', 'high', '#2b1526', ['🔥', '🧊', '🌪️', '⚡', '🌋', '☄️'], '🌗', '💫'),
+
+  /* ── second wave ── */
+  T('thunder-of-zeus', 'Thunder of Zeus', 'high', '#1b2440', ['⚡', '🏛️', '🦅', '🏺', '👑', '🧔'], '🌩️', '🔯', ['hot']),
+  T('legion-of-rome', 'Legion of Rome', 'med', '#33210f', ['🛡️', '⚔️', '🏹', '🐎', '🏛️', '👔'], '🦅', '📜'),
+  T('jungle-jackpot', 'Jungle Jackpot', 'med', '#12301c', ['🌴', '🐒', '🐍', '🐸', '🦜', '🐅'], '🌿', '🗿'),
+  T('candy-rush', 'Candy Rush', 'low', '#3a1436', ['🍬', '🍭', '🧁', '🎂', '🍫', '🍓'], '🌟', '🍯'),
+  T('vampire-manor', 'Vampire Manor', 'high', '#25101c', ['🦇', '⚰️', '🕯️', '🕸️', '🏰', '🧛'], '🌘', '🧄'),
+  T('steampunk-cogs', 'Steampunk Cogs', 'med', '#2e2214', ['⚙️', '🔧', '🕰️', '🎩', '🛢️', '🧭'], '🔩', '🎭'),
+  T('sakura-wind', 'Sakura Wind', 'low', '#2e1524', ['🌸', '🏮', '🍵', '🪭', '🏯', '🎎'], '⛩️', '🎴'),
+  T('cyber-neon', 'Cyber Neon', 'high', '#141a3a', ['💾', '🕹️', '🔌', '📱', '🤖', '🕶️'], '⚡', '💽', ['new']),
+  T('stampede-gold', 'Stampede Gold', 'med', '#33280f', ['🐂', '🐎', '🦓', '🦌', '🌵', '🌄'], '🦬', '💰'),
+  T('deep-space', 'Deep Space Odyssey', 'high', '#0f1430', ['🛸', '🌌', '☄️', '🔭', '👽', '🪐'], '🌟', '🛰️'),
+  T('rainbow-gold', 'Rainbow Gold', 'low', '#123024', ['🍀', '🎩', '🪙', '🔔', '🌈', '🧝'], '✨', '🪴'),
+  T('cirque-fortune', 'Cirque Fortune', 'med', '#301238', ['🎪', '🤹', '🤡', '🎫', '🐘', '🎠'], '🌟', '🎹'),
+  T('wild-panda', 'Wild Panda', 'low', '#1c2a1c', ['🎋', '🐼', '🍃', '🏮', '🏔️', '🐉'], '☯️', '🧧'),
+  T('atlantis-deep', 'Atlantis Deep', 'high', '#0d2740', ['🐚', '🐠', '🐙', '🏺', '⚓', '🔱'], '🌊', '💎'),
+  T('mummy-curse', 'Mummy Curse', 'high', '#2b2410', ['🪲', '🏺', '🗿', '🕯️', '💀', '🧟'], '🔺', '📖'),
+  T('sherwood-gold', 'Sherwood Gold', 'med', '#16301a', ['🏹', '🎯', '🌳', '🏰', '👑', '🧑'], '🪶', '💰'),
+  T('genie-lamp', 'Genie Lamp', 'high', '#2c1a3e', ['🪔', '💍', '🏺', '🫖', '🧞', '🔮'], '✨', '🧶'),
+  T('farm-fortune', 'Farm Fortune', 'low', '#2a2812', ['🐥', '🐷', '🐄', '🌽', '🚜', '👩‍🌾'], '🏡', '🥚'),
+  T('ice-dragon', 'Ice Dragon', 'high', '#12283c', ['❄️', '🧊', '🗡️', '🛡️', '🏔️', '🐉'], '💠', '🥚'),
+  T('disco-nights', 'Disco Nights', 'low', '#2e1236', ['🪩', '🎷', '🕺', '🎶', '🍸', '💃'], '✨', '📼'),
+  T('carnival-cash', 'Carnival Cash', 'med', '#331632', ['🎭', '🪘', '🎺', '🎊', '💃', '🏆'], '🌟', '🎟️'),
+  T('treasure-isle', 'Treasure Isle', 'med', '#123028', ['🗺️', '🌴', '🦜', '⚓', '💀', '💰'], '⚔️', '🗝️'),
+  T('zombie-cash', 'Zombie Cash', 'high', '#1c2a14', ['🧟', '🦴', '⚰️', '🧠', '🔪', '☢️'], '☣️', '💵'),
+  T('sushi-bar', 'Sushi Bar', 'low', '#2c1418', ['🍣', '🍱', '🍥', '🥢', '🍶', '🐥'], '🏮', '💴'),
+  T('rodeo-rush', 'Rodeo Rush', 'med', '#33230f', ['🤠', '🐎', '🪢', '🥁', '🌵', '🏆'], '⭐', '💰'),
+  T('crystal-cavern', 'Crystal Cavern', 'high', '#1a1438', ['🪨', '⛏️', '💎', '🔮', '🦇', '🌟'], '💠', '🧿', ['new']),
+  T('phoenix-rise', 'Phoenix Rise', 'high', '#33160f', ['🔥', '🪶', '🗻', '☀️', '🦅', '🐦‍🔥'], '🌞', '🥚'),
+  T('emerald-isle', 'Emerald Isle', 'low', '#12301e', ['☘️', '🏰', '🎻', '🐏', '🗻', '🧝'], '🌈', '🪙'),
+  T('sultans-palace', 'Sultan’s Palace', 'med', '#332610', ['🐪', '🕌', '🫖', '💍', '🪔', '👸'], '⭐', '🧿'),
+  T('aurora-nights', 'Aurora Nights', 'med', '#122c38', ['❄️', '🦋', '🏔️', '🐺', '🌠', '🌇'], '🌌', '🔮', ['new']),
 ];
 
 /* ---------------- playable UI ---------------- */
@@ -168,6 +201,7 @@ function mountSlot(theme) {
         cells[r][y].cell.classList.add('spin');
         cells[r][y].cell.classList.remove('hit');
       }
+      const stopTick = ticker('reelTick', 80);
       const churn = setInterval(() => {
         for (let r = 0; r < REELS; r++) for (let y = 0; y < ROWS; y++)
           if (cells[r][y].cell.classList.contains('spin'))
@@ -183,9 +217,11 @@ function mountSlot(theme) {
           cell.classList.remove('landed');
           void cell.offsetWidth;            // restart the bounce
           cell.classList.add('landed');
+          if (y === 0) play('reelStop');
         }
       }
       clearInterval(churn);
+      stopTick();
     }
 
     function highlight(res) {
