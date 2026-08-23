@@ -36,6 +36,15 @@ shared celebration layer — tiered win overlays, particle bursts, count-up
 counters and press ripples — on top of per-game animations (reel bounce,
 3D card deals, an orbiting roulette ball, 3D coin and dice, tile flips).
 
+The card and table games are dealt on a real casino layout (`js/felt.js` +
+`css/felt.css`): a wooden rail around a felt surface with the rules printed on
+it, a dealing shoe and discard tray, betting circles that carry proper
+denominated chip stacks ($1 white / $5 red / $25 green / $100 black / $500
+purple / $1k gold), and cards that slide in from the shoe and lay fanned and
+overlapping the way a dealt hand actually sits. Blackjack shows the dealer's
+hole card face down, badges each hand's total, marks the active hand on a
+split, and prints "Blackjack pays 3 to 2" on the felt.
+
 RTP figures are no longer surfaced in the UI. The maths is unchanged and the
 simulator below still verifies it.
 
@@ -57,6 +66,9 @@ js/
     cards.js       blackjack, baccarat, video poker, stud games
     table.js       roulette, sic bo, craps, keno, bingo
     instant.js     crash, mines, plinko, dice, limbo, tower…
+  felt.js          casino table furniture: felt, chips, seats, betting spots
+  fx.js            celebrations, particles, ripples
+  themes.js        per-game stage theming
 tools/rtp.mjs      Monte-Carlo RTP verifier for the slot maths
 ```
 

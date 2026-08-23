@@ -1,0 +1,163 @@
+/* ═══════════════════════════════════════════════════════════
+   Casino table furniture — felt, rail, printed layout, chips, laid cards.
+   Loaded after game-fx.css.
+   ═══════════════════════════════════════════════════════════ */
+
+/* ── the table ── */
+.felt-table{
+  position:relative;
+  border-radius:220px 220px 26px 26px / 150px 150px 26px 26px;
+  padding:13px;
+  background:linear-gradient(175deg,#6b4a25,#3e2a13 42%,#2a1c0c);
+  box-shadow:0 22px 46px rgba(0,0,0,.55),inset 0 2px 0 rgba(255,255,255,.14);
+}
+.felt-inner{
+  position:relative;overflow:hidden;
+  border-radius:inherit;
+  padding:clamp(16px,3.4vw,30px) clamp(12px,3vw,28px) clamp(14px,2.6vw,22px);
+  background:
+    radial-gradient(120% 96% at 50% -12%,
+      hsl(var(--felt-h) 44% 28%), hsl(var(--felt-h) 48% 17%) 52%, hsl(var(--felt-h) 52% 10%));
+  box-shadow:inset 0 0 60px rgba(0,0,0,.6),inset 0 3px 10px rgba(0,0,0,.45);
+}
+/* woven felt texture */
+.felt-inner::before{
+  content:"";position:absolute;inset:0;pointer-events:none;opacity:.5;
+  background-image:
+    repeating-linear-gradient(45deg,rgba(255,255,255,.022) 0 1px,transparent 1px 3px),
+    repeating-linear-gradient(-45deg,rgba(0,0,0,.03) 0 1px,transparent 1px 3px);
+}
+/* dealer arc behind the printed rules */
+.felt-inner::after{
+  content:"";position:absolute;left:50%;top:-42%;width:132%;aspect-ratio:1;
+  transform:translateX(-50%);pointer-events:none;
+  border-radius:50%;border:2px solid rgba(255,255,255,.11);
+}
+.felt-surface{position:relative;z-index:2;display:grid;gap:clamp(10px,2vw,18px)}
+
+/* printed rules on the felt */
+.felt-print{position:relative;z-index:2;text-align:center;margin-bottom:clamp(8px,1.8vw,16px);
+  text-shadow:0 1px 2px rgba(0,0,0,.5)}
+.fp-main{font-size:clamp(11px,2.3vw,16px);font-weight:800;letter-spacing:.13em;
+  color:rgba(255,235,170,.92);text-transform:uppercase}
+.fp-sub{margin-top:3px;font-size:clamp(8.5px,1.6vw,11px);font-weight:600;letter-spacing:.1em;
+  color:rgba(255,255,255,.42);text-transform:uppercase}
+
+/* dealing shoe + discard tray */
+.felt-shoe{position:absolute;top:16px;right:16px;z-index:4;width:44px;height:34px;
+  border-radius:5px 5px 7px 7px;
+  background:linear-gradient(160deg,#2b3350,#161c30);
+  border:1px solid rgba(255,255,255,.16);
+  box-shadow:0 5px 12px rgba(0,0,0,.55)}
+.shoe-lid{position:absolute;inset:0 0 auto;height:11px;border-radius:4px 4px 0 0;
+  background:linear-gradient(180deg,#454e70,#333a55)}
+.shoe-card{position:absolute;left:5px;right:5px;bottom:-4px;height:9px;border-radius:2px;
+  background:linear-gradient(180deg,#fff,#c9d0e2);box-shadow:0 2px 5px rgba(0,0,0,.5)}
+.felt-discard{position:absolute;top:16px;left:16px;z-index:4;width:34px;height:26px;
+  border-radius:4px;background:rgba(0,0,0,.34);border:1px solid rgba(255,255,255,.13)}
+
+/* ── betting spots ── */
+.felt-spot{position:relative;display:grid;place-items:center;gap:2px;
+  width:clamp(84px,16vw,116px);aspect-ratio:1;margin:0 auto;padding:0;
+  border-radius:50%;border:2px dashed rgba(255,255,255,.34);
+  background:radial-gradient(circle,rgba(255,255,255,.07),transparent 70%);
+  color:rgba(255,255,255,.82);text-align:center;
+  transition:border-color .18s var(--ease),background .18s var(--ease),transform .18s var(--ease)}
+button.felt-spot:hover{border-color:var(--gold);background:radial-gradient(circle,
+  rgba(255,197,49,.16),transparent 70%);transform:translateY(-2px)}
+button.felt-spot.on{border-style:solid;border-color:var(--gold);
+  background:radial-gradient(circle,rgba(255,197,49,.24),transparent 72%);
+  box-shadow:0 0 22px rgba(255,197,49,.3)}
+.spot-label{font-size:clamp(9px,1.9vw,11.5px);font-weight:800;letter-spacing:.11em;
+  text-transform:uppercase;text-shadow:0 1px 2px rgba(0,0,0,.5)}
+.spot-sub{font-size:9px;font-weight:600;color:rgba(255,255,255,.5);letter-spacing:.05em}
+.spot-chips{position:absolute;bottom:calc(100% - 20px);left:50%;transform:translateX(-50%);z-index:5}
+
+/* ── chips ── */
+.chipstack{position:relative;display:grid;place-items:center;
+  width:44px;height:calc(30px + var(--stack,1) * 5px)}
+.chipx{position:absolute;bottom:calc(var(--i,0) * 5px);left:50%;transform:translateX(-50%);
+  width:40px;height:40px;border-radius:50%;display:grid;place-items:center;
+  box-shadow:0 2px 5px rgba(0,0,0,.5),inset 0 -2px 4px rgba(0,0,0,.35),
+             inset 0 2px 3px rgba(255,255,255,.28);
+  animation:chipDrop .3s var(--pop) both;animation-delay:calc(var(--i,0) * 40ms)}
+@keyframes chipDrop{from{opacity:0;transform:translate(-50%,-26px) rotate(-16deg)}
+  to{opacity:1;transform:translateX(-50%)}}
+/* the white edge spots every casino chip has */
+.chipx::before{content:"";position:absolute;inset:3px;border-radius:50%;
+  background:repeating-conic-gradient(from 0deg,
+    rgba(255,255,255,.9) 0deg 13deg,transparent 13deg 45deg);
+  -webkit-mask-image:radial-gradient(circle,transparent 62%,#000 63%);
+  mask-image:radial-gradient(circle,transparent 62%,#000 63%)}
+.chipx::after{content:"";position:absolute;inset:7px;border-radius:50%;
+  background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.24)}
+.chipx span{position:relative;z-index:2;font-size:10px;font-weight:900;
+  font-family:"JetBrains Mono",monospace;letter-spacing:-.03em;
+  text-shadow:0 1px 1px rgba(0,0,0,.45)}
+.chipx.d1{background:#e8ecf5;color:#1b2136}
+.chipx.d1 span{text-shadow:none}
+.chipx.d5{background:#c92c46;color:#fff}
+.chipx.d25{background:#128a4a;color:#fff}
+.chipx.d100{background:#1a2033;color:#fff}
+.chipx.d500{background:#6d3fd4;color:#fff}
+.chipx.d1000{background:#d4a017;color:#2a1e00}
+.chipx.d5000{background:#c93f96;color:#fff}
+.chip-val{position:absolute;bottom:-17px;left:50%;transform:translateX(-50%);
+  font-family:"JetBrains Mono",monospace;font-size:10.5px;font-weight:700;
+  color:rgba(255,255,255,.9);white-space:nowrap;text-shadow:0 1px 3px rgba(0,0,0,.7)}
+.chip-more{position:absolute;top:-8px;right:-10px;font-size:9px;font-weight:800;
+  color:var(--gold);text-shadow:0 1px 2px rgba(0,0,0,.7)}
+
+/* ── seats + laid cards ── */
+.felt-seat{display:grid;justify-items:center;gap:6px;position:relative}
+.seat-name{font-size:9.5px;font-weight:800;letter-spacing:.15em;text-transform:uppercase;
+  color:rgba(255,255,255,.4);text-shadow:0 1px 2px rgba(0,0,0,.5)}
+.seat-cards{display:flex;justify-content:center;align-items:flex-start;
+  min-height:106px;padding-top:4px}
+.seat-cards .pcard{
+  transform:rotate(var(--rot,0deg)) translateY(calc(var(--lift,0px) * -1));
+  transform-origin:bottom center;
+  animation:cardSlide .4s var(--pop) both;
+  animation-delay:calc(var(--i,0) * 90ms)}
+.seat-cards .pcard:not(:first-child){margin-left:-32px}
+@keyframes cardSlide{
+  from{opacity:0;transform:translate(120px,-90px) rotate(24deg) scale(.9)}
+  to{opacity:1;transform:rotate(var(--rot,0deg)) translateY(calc(var(--lift,0px) * -1))}}
+.seat-badge{min-width:38px;padding:3px 10px;border-radius:var(--r-pill);
+  background:rgba(4,7,14,.72);border:1px solid rgba(255,255,255,.2);
+  font-family:"JetBrains Mono",monospace;font-variant-numeric:tabular-nums;
+  font-size:12.5px;font-weight:700;color:#fff;text-align:center;
+  box-shadow:0 3px 8px rgba(0,0,0,.45)}
+.seat-badge.bust{background:rgba(224,41,63,.85);border-color:#ff8ba0}
+.seat-badge.win{background:rgba(24,183,85,.85);border-color:#6ff5a5}
+.seat-badge.bj{background:linear-gradient(180deg,var(--gold-hi),var(--gold));
+  color:var(--on-gold);border-color:transparent}
+
+/* player row (supports splits) */
+.felt-row{display:flex;justify-content:center;align-items:flex-start;
+  gap:clamp(10px,3vw,30px);flex-wrap:wrap}
+.felt-box{display:grid;justify-items:center;gap:4px;padding:6px 8px 4px;border-radius:var(--r);
+  transition:background .2s var(--ease),box-shadow .2s var(--ease)}
+.felt-box.active{background:rgba(255,197,49,.09);
+  box-shadow:inset 0 0 0 1px rgba(255,197,49,.4),0 0 22px rgba(255,197,49,.14)}
+.felt-box.settled{opacity:.72}
+
+/* table action bar sits on the rail, not the felt */
+.felt-actions{display:flex;justify-content:center;gap:8px;flex-wrap:wrap;
+  margin-top:var(--s3)}
+.felt-actions .btn{min-width:92px}
+
+/* ── responsive ── */
+@media(max-width:719px){
+  .felt-table{border-radius:130px 130px 18px 18px / 90px 90px 18px 18px;padding:9px}
+  .felt-shoe{width:34px;height:26px;top:10px;right:10px}
+  .seat-cards{min-height:88px}
+  .seat-cards .pcard:not(:first-child){margin-left:-26px}
+  .chipx{width:32px;height:32px}
+  .chipx span{font-size:8.5px}
+  .chipstack{width:36px}
+  .felt-spot{width:clamp(70px,22vw,92px)}
+}
+@media(prefers-reduced-motion:reduce){
+  .chipx,.seat-cards .pcard{animation:none!important}
+}

@@ -2,16 +2,12 @@
    three card poker, caribbean stud, red dog, hi-lo. */
 import { el, clear, fmt, sleep, rndInt, shuffle, wallet, round2 } from '../core.js';
 import {
-  betPanel, msgLine, rules, optGrid, newShoe, draw, cardEl, renderCards,
+  betPanel, msgLine, rules, newShoe, draw, cardEl,
   evalPoker, cmpPoker, RANKS,
 } from '../ui.js';
+import { feltTable, seat, spot, layCards } from '../felt.js';
 
 const G = (o) => o;
-const hand = (title, id) => el('div.hand', { id },
-  el('div.hand-head', {}, el('span', {}, title), el('b', {}, '')),
-  el('div.cards'));
-const setHead = (h, v) => { h.querySelector('b').textContent = v; };
-const cardsOf = (h) => h.querySelector('.cards');
 
 /* ============================================================ BLACKJACK */
 function bjValue(cards) {
@@ -30,8 +26,17 @@ function blackjack({ decks, name, id, h17 = false }) {
     let shoe = newShoe(decks);
     let dealer = [], hands = [], active = 0, stake = 0, over = true;
 
-    const dealerBox = hand('DEALER');
-    const playerWrap = el('div.hands');
+    /* ── the table ── */
+    const dealerSeat = seat('Dealer');
+    const playerRow = el('div.felt-row');
+    const table = feltTable({
+      tone: h17 ? 196 : 152,
+      shoe: true, discard: true,
+      print: ['Blackjack pays 3 to 2',
+        `Dealer must draw to 16 and stand on ${h17 ? 'soft 17' : 'all 17s'}`],
+    });
+    table.surface.append(dealerSeat, playerRow);
+
     const msg = msgLine();
     const shoeInfo = el('div.readout');
 
@@ -39,7 +44,7 @@ function blackjack({ decks, name, id, h17 = false }) {
     const btnStand = el('button.btn', { type: 'button', onclick: () => act('stand') }, 'STAND');
     const btnDouble = el('button.btn', { type: 'button', onclick: () => act('double') }, 'DOUBLE');
     const btnSplit = el('button.btn', { type: 'button', onclick: () => act('split') }, 'SPLIT');
-    const actions = el('div.quick', { style: { gap: '8px' } }, btnHit, btnStand, btnDouble, btnSplit);
+    const actions = el('div.felt-actions', {}, btnHit, btnStand, btnDouble, btnSplit);
     actions.hidden = true;
 
     const bp = betPanel({ start: 25, min: 1, max: 2000, action: 'DEAL', onAction: deal });
@@ -48,21 +53,36 @@ function blackjack({ decks, name, id, h17 = false }) {
       if (shoe.length < decks * 15) shoe = newShoe(decks);
       return draw(shoe, decks);
     }
-    function render(revealHole = false) {
-      const shown = over || revealHole ? dealer : [dealer[0], null];
-      renderCards(cardsOf(dealerBox), shown);
-      setHead(dealerBox, over || revealHole ? bjValue(dealer).total : '?');
 
-      clear(playerWrap);
+    function render(revealHole = false) {
+      const open = over || revealHole;
+      layCards(dealerSeat.cards, open ? dealer : [dealer[0], null]);
+      if (!dealer.length) dealerSeat.setBadge('');
+      else if (!open) dealerSeat.setBadge(bjValue([dealer[0]]).total + ' +');
+      else {
+        const dv = bjValue(dealer).total;
+        dealerSeat.setBadge(isBJ(dealer) ? 'BLACKJACK' : dv,
+          isBJ(dealer) ? 'bj' : dv > 21 ? 'bust' : '');
+      }
+
+      clear(playerRow);
       hands.forEach((h, i) => {
-        const box = hand(hands.length > 1 ? `HAND ${i + 1}${h.done ? '' : (i === active ? ' ◄' : '')}` : 'YOUR HAND');
-        renderCards(cardsOf(box), h.cards);
+        const s = seat(hands.length > 1 ? `Hand ${i + 1}` : 'Your hand');
+        layCards(s.cards, h.cards);
         const v = bjValue(h.cards);
-        setHead(box, `${v.total}${v.soft && v.total !== 21 ? ' soft' : ''}${h.bust ? ' BUST' : ''} · ${fmt(h.bet)}`);
-        if (!h.done && i === active && hands.length > 1) box.style.borderColor = 'var(--gold)';
-        playerWrap.append(box);
+        s.setBadge(
+          h.bust ? `${v.total} BUST`
+            : isBJ(h.cards) ? 'BLACKJACK'
+              : `${v.total}${v.soft && v.total !== 21 ? ' soft' : ''}`,
+          h.bust ? 'bust' : isBJ(h.cards) ? 'bj' : '');
+
+        const circle = spot('Bet');
+        circle.setStack(h.bet);
+        const box = el('div.felt-box' + (!h.done && i === active && !over ? '.active' : '')
+          + (h.done && !over ? '.settled' : ''), {}, s, circle);
+        playerRow.append(box);
       });
-      shoeInfo.textContent = `shoe ${shoe.length} cards`;
+      shoeInfo.textContent = `shoe: ${shoe.length} cards remaining · ${decks} decks`;
     }
     function updateButtons() {
       const h = hands[active];
@@ -152,7 +172,7 @@ function blackjack({ decks, name, id, h17 = false }) {
     }
 
     render();
-    root.append(el('div.hands', {}, dealerBox, playerWrap), msg.node, actions, bp.node, shoeInfo,
+    root.append(table, actions, msg.node, bp.node, shoeInfo,
       rules('BLACKJACK RULES',
         `<b>${decks}-deck shoe</b>, reshuffled when it runs low. Blackjack pays <code>3:2</code>, other wins pay <code>1:1</code>.`,
         `Dealer ${h17 ? 'hits' : 'stands on'} <code>soft 17</code>. Double on any two cards, split up to 4 hands.`,
@@ -167,15 +187,35 @@ function baccarat(root) {
   let shoe = newShoe(8), side = 'player', busy = false;
   const pts = (cards) => cards.reduce((s, c) => s + Math.min(c.v, 10) % 10, 0) % 10;
 
-  const pBox = hand('PLAYER'), bBox = hand('BANKER');
+  const pSeat = seat('Player'), bSeat = seat('Banker');
   const msg = msgLine();
-  const picker = optGrid([
-    { key: 'player', label: 'PLAYER', sub: 'pays 1:1' },
-    { key: 'banker', label: 'BANKER', sub: '1:1 − 5% comm.' },
-    { key: 'tie', label: 'TIE', sub: 'pays 8:1' },
-    { key: 'ppair', label: 'PLAYER PAIR', sub: 'pays 11:1' },
-    { key: 'bpair', label: 'BANKER PAIR', sub: 'pays 11:1' },
-  ], (k) => { side = k; });
+
+  const SPOTS = [
+    { key: 'player', label: 'Player', sub: '1 to 1' },
+    { key: 'banker', label: 'Banker', sub: '1 to 1 -5%' },
+    { key: 'tie', label: 'Tie', sub: '8 to 1' },
+    { key: 'ppair', label: 'P Pair', sub: '11 to 1' },
+    { key: 'bpair', label: 'B Pair', sub: '11 to 1' },
+  ];
+  const spots = new Map();
+  const spotRow = el('div.felt-row');
+  for (const sp of SPOTS) {
+    const node = spot(sp.label, { sub: sp.sub, key: sp.key, onPick: choose });
+    spots.set(sp.key, node);
+    spotRow.append(node);
+  }
+  function choose(k) {
+    if (busy) return;
+    side = k;
+    for (const [key, node] of spots) {
+      node.classList.toggle('on', key === side);
+      node.setStack(key === side ? bp.value : 0);
+    }
+  }
+
+  const table = feltTable({ tone: 348, shoe: true, discard: true,
+    print: ['Baccarat - Punto Banco', 'Banker wins pay 5% commission - tie pays 8 to 1'] });
+  table.surface.append(el('div.felt-row', {}, pSeat, bSeat), spotRow);
 
   const bp = betPanel({ start: 25, min: 1, max: 2000, action: 'DEAL', onAction: play });
 
@@ -188,13 +228,13 @@ function baccarat(root) {
     const d = () => draw(shoe, 8);
 
     const p = [d(), d()], b = [d(), d()];
-    renderCards(cardsOf(pBox), p); renderCards(cardsOf(bBox), b);
-    setHead(pBox, pts(p)); setHead(bBox, pts(b));
+    layCards(pSeat.cards, p); layCards(bSeat.cards, b);
+    pSeat.setBadge(pts(p)); bSeat.setBadge(pts(b));
     await sleep(600);
 
     if (pts(p) < 8 && pts(b) < 8) {
       let third = null;
-      if (pts(p) <= 5) { third = d(); p.push(third); renderCards(cardsOf(pBox), p); setHead(pBox, pts(p)); await sleep(450); }
+      if (pts(p) <= 5) { third = d(); p.push(third); layCards(pSeat.cards, p); pSeat.setBadge(pts(p)); await sleep(450); }
       const bt = pts(b);
       let bDraw;
       if (third === null) bDraw = bt <= 5;
@@ -203,11 +243,13 @@ function baccarat(root) {
         bDraw = bt <= 2 || (bt === 3 && t !== 8) || (bt === 4 && t >= 2 && t <= 7) ||
                 (bt === 5 && t >= 4 && t <= 7) || (bt === 6 && (t === 6 || t === 7));
       }
-      if (bDraw) { b.push(d()); renderCards(cardsOf(bBox), b); setHead(bBox, pts(b)); await sleep(450); }
+      if (bDraw) { b.push(d()); layCards(bSeat.cards, b); bSeat.setBadge(pts(b)); await sleep(450); }
     }
 
     const pv = pts(p), bv = pts(b);
     const winner = pv > bv ? 'player' : bv > pv ? 'banker' : 'tie';
+    pSeat.setBadge(pv, winner === 'player' ? 'win' : '');
+    bSeat.setBadge(bv, winner === 'banker' ? 'win' : '');
     let payout = 0;
     if (side === 'player' && winner === 'player') payout = stake * 2;
     else if (side === 'banker' && winner === 'banker') payout = stake + stake * 0.95;
@@ -225,8 +267,8 @@ function baccarat(root) {
     busy = false; bp.unlock();
   }
 
-  root.append(el('div.hands', {}, pBox, bBox), msg.node,
-    el('div', { style: { marginTop: '14px' } }, picker), bp.node,
+  choose('player');
+  root.append(table, msg.node, bp.node,
     rules('BACCARAT — PUNTO BANCO',
       `Cards count face value, 10s and faces are <code>0</code>, only the last digit of the total counts.`,
       `Third-card draws follow the standard punto banco tableau — no decisions to make.`,
@@ -386,11 +428,15 @@ function videoPoker(id) {
 function casinoWar(root) {
   const id = 'casino-war';
   let shoe = newShoe(6), busy = false, warPending = null;
-  const pBox = hand('YOU'), dBox = hand('DEALER');
+  const dSeat = seat('Dealer'), pSeat = seat('You');
+  const betSpot = spot('Bet');
+  const table = feltTable({ tone: 36, shoe: true,
+    print: ['Casino War', 'On a tie: surrender half or go to war - war wins pay 2 to 1'] });
+  table.surface.append(dSeat, pSeat, el('div.felt-row', {}, betSpot));
   const msg = msgLine();
   const btnWar = el('button.btn.btn-red', { type: 'button', onclick: () => resolveWar(true) }, 'GO TO WAR (double)');
   const btnSurr = el('button.btn', { type: 'button', onclick: () => resolveWar(false) }, 'SURRENDER (half back)');
-  const warRow = el('div.quick', { style: { gap: '8px', justifyContent: 'center', marginTop: '12px' } }, btnWar, btnSurr);
+  const warRow = el('div.felt-actions', {}, btnWar, btnSurr);
   warRow.hidden = true;
   const bp = betPanel({ start: 25, min: 1, max: 2000, action: 'DEAL', onAction: play });
   const hv = (c) => (c.v === 1 ? 14 : c.v);
@@ -402,8 +448,9 @@ function casinoWar(root) {
     busy = true; bp.lock(); msg.clear();
     if (shoe.length < 20) shoe = newShoe(6);
     const p = draw(shoe, 6), d = draw(shoe, 6);
-    renderCards(cardsOf(pBox), [p]); renderCards(cardsOf(dBox), [d]);
-    setHead(pBox, p.r); setHead(dBox, d.r);
+    layCards(pSeat.cards, [p]); layCards(dSeat.cards, [d]);
+    pSeat.setBadge(p.r + p.suit); dSeat.setBadge(d.r + d.suit);
+    betSpot.setStack(stake);
 
     if (hv(p) > hv(d)) { win(stake * 2, `${p.r} beats ${d.r}`, stake); }
     else if (hv(p) < hv(d)) { lose(`${d.r} beats ${p.r}`, stake); }
@@ -416,9 +463,10 @@ function casinoWar(root) {
     if (!wallet.bet(stake)) { warRow.hidden = false; return; }
     for (let i = 0; i < 3; i++) { draw(shoe, 6); draw(shoe, 6); }   // burn 3 each
     const p = draw(shoe, 6), d = draw(shoe, 6);
-    renderCards(cardsOf(pBox), [p]); renderCards(cardsOf(dBox), [d]);
-    setHead(pBox, p.r); setHead(dBox, d.r);
+    layCards(pSeat.cards, [p]); layCards(dSeat.cards, [d]);
+    pSeat.setBadge(p.r + p.suit); dSeat.setBadge(d.r + d.suit);
     const total = stake * 2;
+    betSpot.setStack(total);
     if (hv(p) >= hv(d)) win(total * 2, hv(p) === hv(d) ? 'War tie — you win!' : `${p.r} beats ${d.r}`, total);
     else lose(`${d.r} beats ${p.r}`, total);
   }
@@ -426,7 +474,7 @@ function casinoWar(root) {
   const lose = (why, staked) => { msg.lose(why); wallet.logResult(id, staked, 0); done(); };
   const done = () => { busy = false; bp.unlock(); };
 
-  root.append(el('div.hands', {}, dBox, pBox), msg.node, warRow, bp.node,
+  root.append(table, warRow, msg.node, bp.node,
     rules('CASINO WAR',
       `Highest card wins — aces are high, suits are ignored. A win pays <code>1:1</code>.`,
       `On a tie you either <b>surrender</b> and get half your stake back, or <b>go to war</b>: match your bet, three cards are burned, and one more card is dealt each.`,
@@ -451,11 +499,15 @@ function rank3(cards) {
 function threeCard(root) {
   const id = 'three-card-poker';
   let shoe = newShoe(1), stake = 0, phase = 'bet', p = [], d = [];
-  const pBox = hand('YOUR HAND'), dBox = hand('DEALER');
+  const dSeat = seat('Dealer'), pSeat = seat('Your hand');
+  const anteSpot = spot('Ante'), playSpot = spot('Play');
+  const table = feltTable({ tone: 164, shoe: true,
+    print: ['Three Card Poker', 'Dealer qualifies with queen high or better'] });
+  table.surface.append(dSeat, pSeat, el('div.felt-row', {}, anteSpot, playSpot));
   const msg = msgLine();
   const btnPlay = el('button.btn.btn-green', { type: 'button', onclick: () => decide(true) }, 'PLAY (match ante)');
   const btnFold = el('button.btn.btn-red', { type: 'button', onclick: () => decide(false) }, 'FOLD');
-  const row = el('div.quick', { style: { gap: '8px', justifyContent: 'center', marginTop: '12px' } }, btnPlay, btnFold);
+  const row = el('div.felt-actions', {}, btnPlay, btnFold);
   row.hidden = true;
   const bp = betPanel({ start: 25, min: 1, max: 1000, label: 'ANTE', action: 'DEAL', onAction: deal });
   const ANTE_BONUS = { 5: 5, 4: 4, 3: 1 };
@@ -467,15 +519,17 @@ function threeCard(root) {
     shoe = newShoe(1);
     p = [draw(shoe), draw(shoe), draw(shoe)];
     d = [draw(shoe), draw(shoe), draw(shoe)];
-    renderCards(cardsOf(pBox), p); setHead(pBox, rank3(p).name);
-    renderCards(cardsOf(dBox), [null, null, null]); setHead(dBox, '—');
+    layCards(pSeat.cards, p); pSeat.setBadge(rank3(p).name);
+    layCards(dSeat.cards, [null, null, null]); dSeat.setBadge('');
+    anteSpot.setStack(stake); playSpot.setStack(0);
     phase = 'decide'; row.hidden = false; bp.lock();
     msg.set('Play or fold?', 'push');
   }
   function decide(playOn) {
     row.hidden = true;
     const pr = rank3(p), dr = rank3(d);
-    renderCards(cardsOf(dBox), d); setHead(dBox, dr.name);
+    layCards(dSeat.cards, d); dSeat.setBadge(dr.name);
+    if (playOn) playSpot.setStack(stake);
     let payout = 0, total = stake, note = '';
     const bonus = ANTE_BONUS[pr.r] ? stake * ANTE_BONUS[pr.r] : 0;
 
@@ -502,7 +556,7 @@ function threeCard(root) {
   }
   const cmpKey = (a, b) => { for (let i = 0; i < a.length; i++) if (a[i] !== b[i]) return a[i] - b[i]; return 0; };
 
-  root.append(el('div.hands', {}, dBox, pBox), msg.node, row, bp.node,
+  root.append(table, row, msg.node, bp.node,
     rules('THREE CARD POKER',
       `Post an <b>ante</b>, see your three cards, then either match it as a <b>play</b> bet or fold and lose the ante.`,
       `Ranking (3 cards): <code>Straight Flush > Three of a Kind > Straight > Flush > Pair > High Card</code>.`,
@@ -515,11 +569,15 @@ function threeCard(root) {
 function caribbeanStud(root) {
   const id = 'caribbean-stud';
   let shoe = [], stake = 0, phase = 'bet', p = [], d = [];
-  const pBox = hand('YOUR HAND'), dBox = hand('DEALER');
+  const dSeat = seat('Dealer'), pSeat = seat('Your hand');
+  const anteSpot = spot('Ante'), raiseSpot = spot('Raise');
+  const table = feltTable({ tone: 190, shoe: true,
+    print: ['Caribbean Stud Poker', 'Dealer qualifies with ace-king or better'] });
+  table.surface.append(dSeat, pSeat, el('div.felt-row', {}, anteSpot, raiseSpot));
   const msg = msgLine();
   const btnRaise = el('button.btn.btn-green', { type: 'button', onclick: () => decide(true) }, 'RAISE (2× ante)');
   const btnFold = el('button.btn.btn-red', { type: 'button', onclick: () => decide(false) }, 'FOLD');
-  const row = el('div.quick', { style: { gap: '8px', justifyContent: 'center', marginTop: '12px' } }, btnRaise, btnFold);
+  const row = el('div.felt-actions', {}, btnRaise, btnFold);
   row.hidden = true;
   const bp = betPanel({ start: 25, min: 1, max: 1000, label: 'ANTE', action: 'DEAL', onAction: deal });
   const ODDS = [1, 1, 2, 3, 4, 5, 7, 20, 50, 100];   // by evalPoker rank
@@ -531,15 +589,17 @@ function caribbeanStud(root) {
     shoe = newShoe(1);
     p = Array.from({ length: 5 }, () => draw(shoe));
     d = Array.from({ length: 5 }, () => draw(shoe));
-    renderCards(cardsOf(pBox), p); setHead(pBox, evalPoker(p).name);
-    renderCards(cardsOf(dBox), [d[0], null, null, null, null]); setHead(dBox, `${d[0].r} showing`);
+    layCards(pSeat.cards, p); pSeat.setBadge(evalPoker(p).name);
+    layCards(dSeat.cards, [d[0], null, null, null, null]); dSeat.setBadge(`${d[0].r} up`);
+    anteSpot.setStack(stake); raiseSpot.setStack(0);
     phase = 'decide'; row.hidden = false; bp.lock();
     msg.set('Dealer shows one card — raise or fold?', 'push');
   }
   function decide(raise) {
     row.hidden = true;
     const pe = evalPoker(p), de = evalPoker(d);
-    renderCards(cardsOf(dBox), d); setHead(dBox, de.name);
+    layCards(dSeat.cards, d); dSeat.setBadge(de.name);
+    if (raise) raiseSpot.setStack(stake * 2);
     let payout = 0, total = stake, note = '';
     if (!raise) note = 'Folded — ante lost';
     else {
@@ -560,7 +620,7 @@ function caribbeanStud(root) {
     wallet.logResult(id, total, payout);
     phase = 'bet'; bp.unlock();
   }
-  root.append(el('div.hands', {}, dBox, pBox), msg.node, row, bp.node,
+  root.append(table, row, msg.node, bp.node,
     rules('CARIBBEAN STUD POKER',
       `Ante, receive five cards and see one dealer card. Either <b>raise</b> for twice the ante or <b>fold</b>.`,
       `Dealer qualifies with <b>Ace-King or better</b>. If not, the ante pays 1:1 and the raise pushes.`,
@@ -572,7 +632,12 @@ function caribbeanStud(root) {
 function redDog(root) {
   const id = 'red-dog';
   let shoe = newShoe(8), busy = false;
-  const box = hand('THE SPREAD');
+  const spreadSeat = seat('The spread');
+  const betSpot = spot('Bet');
+  const table = feltTable({ tone: 14, shoe: true,
+    print: ['Red Dog', 'Third card between the two - spread 1 pays 5 to 1'] });
+  table.surface.append(spreadSeat, el('div.felt-row', {}, betSpot));
+  const box = spreadSeat;
   const msg = msgLine();
   const bp = betPanel({ start: 25, min: 1, max: 2000, action: 'DEAL', onAction: play });
   const hv = (c) => (c.v === 1 ? 14 : c.v);
@@ -583,25 +648,26 @@ function redDog(root) {
     const stake = bp.value;
     if (!bp.take()) return;
     busy = true; bp.lock(); msg.clear();
+    betSpot.setStack(stake);
     if (shoe.length < 20) shoe = newShoe(8);
     let a = draw(shoe, 8), b = draw(shoe, 8);
-    renderCards(cardsOf(box), [a, b, null]);
+    layCards(spreadSeat.cards, [a, b, null]);
     await sleep(500);
 
     if (hv(a) > hv(b)) [a, b] = [b, a];
     let payout = 0, note = '';
     if (hv(a) === hv(b)) {
       const c = draw(shoe, 8);
-      renderCards(cardsOf(box), [a, b, c]);
+      layCards(spreadSeat.cards, [a, b, c]);
       if (hv(c) === hv(a)) { payout = stake * 12; note = 'Three of a kind — pays 11:1'; }
       else { payout = stake; note = 'Pair, third card differs — push'; }
     } else {
       const spread = hv(b) - hv(a) - 1;
-      setHead(box, `spread ${spread}`);
-      if (spread === 0) { payout = stake; note = 'Consecutive cards — push'; renderCards(cardsOf(box), [a, b]); }
+      spreadSeat.setBadge(`spread ${spread}`);
+      if (spread === 0) { payout = stake; note = 'Consecutive cards — push'; layCards(spreadSeat.cards, [a, b]); }
       else {
         const c = draw(shoe, 8);
-        renderCards(cardsOf(box), [a, c, b]);
+        layCards(spreadSeat.cards, [a, c, b]);
         const inside = hv(c) > hv(a) && hv(c) < hv(b);
         const mult = SPREAD_PAY[spread] || 1;
         if (inside) { payout = stake * (1 + mult); note = `${c.r} is inside — spread ${spread} pays ${mult}:1`; }
@@ -614,7 +680,7 @@ function redDog(root) {
     wallet.logResult(id, stake, payout);
     busy = false; bp.unlock();
   }
-  root.append(box, msg.node, bp.node,
+  root.append(table, msg.node, bp.node,
     rules('RED DOG (ACEY-DEUCEY)',
       `Two cards are dealt. You win if a third card falls <b>strictly between</b> them.`,
       `The payout depends on the gap: spread 1 pays <code>5:1</code>, spread 2 <code>4:1</code>, spread 3 <code>2:1</code>, spread 4+ <code>1:1</code>.`,
@@ -626,13 +692,17 @@ function redDog(root) {
 function hiLo(root) {
   const id = 'hi-lo';
   let shoe = newShoe(1), current = null, streak = 0, mult = 1, stake = 0, live = false;
-  const box = hand('CURRENT CARD');
+  const cardSeat = seat('Current card');
+  const betSpot = spot('Bet');
+  const table = feltTable({ tone: 214, shoe: true,
+    print: ['Hi-Lo', 'Ties win - cash out any time'] });
+  table.surface.append(cardSeat, el('div.felt-row', {}, betSpot));
   const msg = msgLine();
   const info = el('div.readout');
   const btnHi = el('button.btn.btn-green', { type: 'button', onclick: () => guess('hi') }, '▲ HIGHER');
   const btnLo = el('button.btn.btn-red', { type: 'button', onclick: () => guess('lo') }, '▼ LOWER');
   const btnOut = el('button.btn.btn-gold', { type: 'button', onclick: cashOut }, 'CASH OUT');
-  const row = el('div.quick', { style: { gap: '8px', justifyContent: 'center', marginTop: '12px' } }, btnLo, btnHi, btnOut);
+  const row = el('div.felt-actions', {}, btnLo, btnHi, btnOut);
   row.hidden = true;
   const bp = betPanel({ start: 25, min: 1, max: 2000, action: 'START', onAction: start });
   const hv = (c) => (c.v === 1 ? 14 : c.v);
@@ -646,8 +716,9 @@ function hiLo(root) {
     return Math.max(1.02, (0.97 / p));
   }
   function refresh() {
-    renderCards(cardsOf(box), [current]);
-    setHead(box, current.r + current.suit);
+    layCards(cardSeat.cards, [current]);
+    cardSeat.setBadge(current.r + current.suit);
+    betSpot.setStack(round2(stake * mult));
     btnHi.textContent = `▲ HIGHER ${odds('hi').toFixed(2)}×`;
     btnLo.textContent = `▼ LOWER ${odds('lo').toFixed(2)}×`;
     btnOut.textContent = `CASH OUT ${fmt(stake * mult)}`;
@@ -670,7 +741,8 @@ function hiLo(root) {
       streak++; mult *= step; refresh();
       msg.set(`${next.r}${next.suit} — correct! ${mult.toFixed(2)}× banked`, 'win');
     } else {
-      renderCards(cardsOf(box), [next]); setHead(box, next.r + next.suit);
+      layCards(cardSeat.cards, [next]); cardSeat.setBadge(next.r + next.suit, 'bust');
+      betSpot.setStack(0);
       msg.lose(`${next.r}${next.suit} — busted after ${streak}`);
       wallet.logResult(id, stake, 0);
       end();
@@ -685,7 +757,7 @@ function hiLo(root) {
   }
   const end = () => { live = false; row.hidden = true; bp.unlock(); };
 
-  root.append(box, info, msg.node, row, bp.node,
+  root.append(table, row, info, msg.node, bp.node,
     rules('HI-LO',
       `Guess whether the next card is higher or lower. <b>Ties count as a win</b> for whichever side you picked.`,
       `Each correct call multiplies your stake by the true odds of that call, less a small margin — safe guesses pay less.`,
