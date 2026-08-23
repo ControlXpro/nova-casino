@@ -77,17 +77,18 @@
   opacity:.75}
 .crash-sky.drift{animation:skyDrift 26s linear infinite alternate}
 @keyframes skyDrift{to{transform:scale(1.12) translateY(-4%)}}
-.rocket{position:absolute;z-index:3;width:104px;height:104px;
+/* The sprite carries a real alpha channel (tools/cutout.py), so no blend-mode
+   trick is needed and the glow follows the rocket instead of its bounding box. */
+.rocket{position:absolute;z-index:3;width:132px;height:132px;
   left:8%;bottom:8%;pointer-events:none;
   background-size:contain;background-repeat:no-repeat;background-position:center;
-  mix-blend-mode:screen;                 /* knocks the black plate out */
-  filter:drop-shadow(0 0 14px rgba(255,140,60,.5));
+  filter:drop-shadow(0 0 10px rgba(255,150,70,.45));
   transition:left .12s linear,bottom .12s linear,transform .2s var(--ease)}
 .crash-box.busted .rocket{animation:rocketFall .6s ease-in forwards}
 @keyframes rocketFall{to{transform:rotate(130deg) translateY(160px);opacity:0}}
-.boom{position:absolute;z-index:4;width:220px;height:220px;pointer-events:none;
+.boom{position:absolute;z-index:4;width:240px;height:240px;pointer-events:none;
   background-size:contain;background-repeat:no-repeat;background-position:center;
-  mix-blend-mode:screen;transform:translate(-50%,-50%) scale(.3);opacity:0}
+  transform:translate(-50%,-50%) scale(.3);opacity:0}
 .boom.go{animation:boomPop .7s ease-out forwards}
 @keyframes boomPop{
   0%{opacity:0;transform:translate(-50%,-50%) scale(.3)}
