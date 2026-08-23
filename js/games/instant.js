@@ -66,7 +66,8 @@ function crash(root) {
     stake = bp.value;
     if (!bp.take()) return;
     live = true; cashed = false; mult = 1; crashAt = rollCrash();
-    stateEl.textContent = 'IN FLIGHT'; multEl.style.color = 'var(--gold)';
+    stateEl.textContent = 'IN FLIGHT'; multEl.style.color = 'var(--accent, var(--gold))';
+    box.classList.add('flying'); box.classList.remove('busted');
     msg.clear(); bp.setAction('CASH OUT', 'btn-green'); bp.lock(); bp.actionBtn.disabled = false;
     t0 = performance.now();
     raf = requestAnimationFrame(tick);
@@ -77,7 +78,7 @@ function crash(root) {
     const payout = round2(stake * mult);
     wallet.pay(payout);
     multEl.style.color = 'var(--win)';
-    msg.win(payout - stake, `Cashed out at ${fmtx(mult)} ·`);
+    msg.win(payout - stake, `Cashed out at ${fmtx(mult)} ·`, stake);
     wallet.logResult(id, stake, payout);
   }
   function bust() {
@@ -85,6 +86,7 @@ function crash(root) {
     live = false;
     mult = crashAt; multEl.textContent = fmtx(crashAt);
     stateEl.textContent = 'CRASHED';
+    box.classList.remove('flying'); box.classList.add('busted');
     if (!cashed) { multEl.style.color = 'var(--lose)'; msg.lose(`Crashed at ${fmtx(crashAt)}`); wallet.logResult(id, stake, 0); }
     draw();
     history.unshift(crashAt); if (history.length > 12) history.pop();
@@ -169,7 +171,7 @@ function mines(root) {
     if (!live || picked === 0) { if (picked === 0) toast('Reveal at least one tile first.'); return; }
     const payout = round2(stake * multAt(picked));
     wallet.pay(payout);
-    msg.win(payout - stake, `Cashed out at ${fmtx(multAt(picked))} ·`);
+    msg.win(payout - stake, `Cashed out at ${fmtx(multAt(picked))} ·`, stake);
     wallet.logResult(id, stake, payout);
     for (const b of field) { tiles[b].className = 'tile bomb done dim'; tiles[b].textContent = '💣'; }
     end();
@@ -253,7 +255,7 @@ function plinko(root) {
     buckets.children[slot].classList.add('flash');
     const payout = round2(stake * mult);
     if (payout > 0) wallet.pay(payout);
-    if (payout > stake) msg.win(payout - stake, `${mult}× bucket ·`);
+    if (payout > stake) msg.win(payout - stake, `${mult}× bucket ·`, stake);
     else if (payout === stake) msg.push(`${mult}× — stake back`);
     else msg.lose(`${mult}× bucket — lost ${fmt(stake - payout)}`);
     wallet.logResult(id, stake, payout);
@@ -312,7 +314,7 @@ function diceGame(root) {
     const won = over ? v > target : v < target;
     resultEl.style.color = won ? 'var(--win)' : 'var(--lose)';
     const pay = won ? round2(stake * mult) : 0;
-    if (pay) { wallet.pay(pay); msg.win(pay - stake, `${v.toFixed(2)} ${over ? '>' : '<'} ${target} ·`); }
+    if (pay) { wallet.pay(pay); msg.win(pay - stake, `${v.toFixed(2)} ${over ? '>' : '<'} ${target} ·`, stake); }
     else msg.lose(`${v.toFixed(2)} — ${over ? 'not over' : 'not under'} ${target}`);
     wallet.logResult(id, stake, pay);
     busy = false; bp.unlock();
@@ -361,7 +363,7 @@ function limbo(root) {
     const won = r >= t;
     resultEl.style.color = won ? 'var(--win)' : 'var(--lose)';
     const pay = won ? round2(stake * t) : 0;
-    if (pay) { wallet.pay(pay); msg.win(pay - stake, `${fmtx(r)} cleared ${fmtx(t)} ·`); }
+    if (pay) { wallet.pay(pay); msg.win(pay - stake, `${fmtx(r)} cleared ${fmtx(t)} ·`, stake); }
     else msg.lose(`${fmtx(r)} fell short of ${fmtx(t)}`);
     wallet.logResult(id, stake, pay);
     busy = false; bp.unlock();
@@ -408,7 +410,7 @@ function wheelGame(root) {
     const mult = WHEEL_SEG[idx];
     const payout = round2(stake * mult);
     if (payout > 0) wallet.pay(payout);
-    if (payout > stake) msg.win(payout - stake, `${mult}× ·`);
+    if (payout > stake) msg.win(payout - stake, `${mult}× ·`, stake);
     else if (payout === stake) msg.push(`${mult}× — stake back`);
     else msg.lose(`${mult}× — no win`);
     wallet.logResult(id, stake, payout);
@@ -439,13 +441,15 @@ function coinFlip(root) {
     const stake = bp.value;
     if (!bp.take()) return;
     busy = true; bp.lock(); msg.clear();
-    coin.classList.add('roll');
+    coin.classList.add('coin3d');
     for (let i = 0; i < 12; i++) { coin.textContent = i % 2 ? '👑' : '🦅'; await sleep(70); }
     const res = rndInt(2) ? 'heads' : 'tails';
     coin.textContent = res === 'heads' ? '👑' : '🦅';
-    coin.classList.remove('roll');
+    coin.classList.remove('coin3d');
+    coin.classList.add('coin-land');
+    setTimeout(() => coin.classList.remove('coin-land'), 620);
     const payout = res === side ? round2(stake * 1.98) : 0;
-    if (payout) { wallet.pay(payout); msg.win(payout - stake, `${res.toUpperCase()} ·`); }
+    if (payout) { wallet.pay(payout); msg.win(payout - stake, `${res.toUpperCase()} ·`, stake); }
     else msg.lose(`${res.toUpperCase()} — you called ${side}`);
     wallet.logResult(id, stake, payout);
     busy = false; bp.unlock();
@@ -520,7 +524,7 @@ function scratch(root) {
     if (payout > 0) {
       cellEls.forEach((c, i) => { if (layout[i] === winSym) c.classList.add('wincell'); });
       wallet.pay(payout);
-      msg.win(payout - currentStake, `Three ${winSym} — ${prize}× ·`);
+      msg.win(payout - currentStake, `Three ${winSym} — ${prize}× ·`, currentStake);
     } else msg.lose('No three matching symbols');
     wallet.logResult(id, currentStake, payout);
     busy = false; bp.unlock();
@@ -595,7 +599,7 @@ function tower(root) {
     if (!live || level === 0) { if (level === 0) toast('Clear a level first.'); return; }
     const payout = round2(stake * multAt(level));
     wallet.pay(payout);
-    msg.win(payout - stake, `Cashed out on level ${level} at ${fmtx(multAt(level))} ·`);
+    msg.win(payout - stake, `Cashed out on level ${level} at ${fmtx(multAt(level))} ·`, stake);
     wallet.logResult(id, stake, payout);
     end();
   }
@@ -673,7 +677,7 @@ function penalty(root) {
     if (!live || scored === 0) { if (!scored) toast('Score at least one goal first.'); return; }
     const payout = round2(stake * multAt(scored));
     wallet.pay(payout);
-    msg.win(payout - stake, `Cashed out after ${scored} goals ·`);
+    msg.win(payout - stake, `Cashed out after ${scored} goals ·`, stake);
     wallet.logResult(id, stake, payout);
     end();
   }
@@ -718,7 +722,7 @@ function rps(root) {
     const beats = { rock: 'scissors', paper: 'rock', scissors: 'paper' };
     let payout = 0;
     if (mine.k === theirs.k) { payout = stake; wallet.pay(payout); msg.push(`Both ${mine.k} — push`); }
-    else if (beats[mine.k] === theirs.k) { payout = round2(stake * 1.94); wallet.pay(payout); msg.win(payout - stake, `${mine.k} beats ${theirs.k} ·`); }
+    else if (beats[mine.k] === theirs.k) { payout = round2(stake * 1.94); wallet.pay(payout); msg.win(payout - stake, `${mine.k} beats ${theirs.k} ·`, stake); }
     else msg.lose(`${theirs.k} beats ${mine.k}`);
     wallet.logResult(id, stake, payout);
     busy = false; bp.unlock();

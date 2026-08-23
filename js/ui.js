@@ -1,5 +1,6 @@
 /* Shared building blocks every game reuses: bet controls, playing cards, message line. */
 import { el, fmt, round2, wallet, shuffle, rndInt, toast } from './core.js';
+import { celebrate, coinBurst, loseFx, shake } from './fx.js';
 
 /* ---------------- bet control ---------------- */
 /**
@@ -62,8 +63,14 @@ const clampBet = (v, min, max) => {
 };
 
 /* ---------------- message line ---------------- */
+/**
+ * Result line shared by all 56 games. Wiring the FX here means every game gets
+ * celebration/loss feedback without each one re-implementing it — while each
+ * game still keeps its own themed stage and bespoke animations.
+ */
 export function msgLine() {
   const node = el('div.msg');
+  const stage = () => node.closest('.stage');
   return {
     node,
     set(text, kind = '', big = false) {
@@ -71,8 +78,15 @@ export function msgLine() {
       node.textContent = text;
     },
     clear() { node.className = 'msg'; node.textContent = ''; },
-    win(amount, prefix = 'WIN') { this.set(`${prefix} +${fmt(amount)}`, 'win', amount > 0); },
-    lose(text = 'No win') { this.set(text, 'lose'); },
+    /** @param {number} amount net win  @param {number} [stake] enables the tiered celebration */
+    win(amount, prefix = 'WIN', stake = 0) {
+      this.set(`${prefix} +$${fmt(amount)}`, 'win', amount > 0);
+      if (amount <= 0) return;
+      const mult = stake > 0 ? (amount + stake) / stake : 0;
+      if (mult >= 3) celebrate(stage(), amount + stake, mult);
+      else coinBurst(node, 12);
+    },
+    lose(text = 'No win') { this.set(text, 'lose'); loseFx(stage()); },
     push(text = 'PUSH — stake returned') { this.set(text, 'push'); },
   };
 }

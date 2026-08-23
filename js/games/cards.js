@@ -144,7 +144,7 @@ function blackjack({ decks, name, id, h17 = false }) {
       render(true);
       if (payout > 0) wallet.pay(payout);
       const net = payout - totalBet;
-      if (net > 0) msg.win(net, 'WIN');
+      if (net > 0) msg.win(net, 'WIN', totalBet);
       else if (net === 0) msg.push(`PUSH · ${parts.join(', ')}`);
       else msg.lose(`Dealer ${dv > 21 ? 'busts' : dv} — ${parts.join(', ')}`);
       wallet.logResult(id, totalBet, payout);
@@ -218,7 +218,7 @@ function baccarat(root) {
 
     if (payout > 0) wallet.pay(payout);
     const label = `Player ${pv} — Banker ${bv} · ${winner.toUpperCase()}`;
-    if (payout > stake) msg.win(payout - stake, label + ' · WIN');
+    if (payout > stake) msg.win(payout - stake, label + ' · WIN', stake);
     else if (payout === stake) msg.push(label + ' · PUSH');
     else msg.lose(label);
     wallet.logResult(id, stake, payout);
@@ -365,7 +365,7 @@ function videoPoker(id) {
         const mult = cfg.table[key] ?? 0;
         highlight(mult ? key : null);
         const payout = round2(stake * mult);
-        if (payout > 0) { wallet.pay(payout); msg.win(payout, VP_KEYS[key] + ' —'); }
+        if (payout > 0) { wallet.pay(payout); msg.win(payout, VP_KEYS[key] + ' —', stake); }
         else msg.lose('No paying hand');
         wallet.logResult(id, stake, payout);
         bp.setAction('DEAL', 'btn-gold'); bp.unlock();
@@ -422,7 +422,7 @@ function casinoWar(root) {
     if (hv(p) >= hv(d)) win(total * 2, hv(p) === hv(d) ? 'War tie — you win!' : `${p.r} beats ${d.r}`, total);
     else lose(`${d.r} beats ${p.r}`, total);
   }
-  const win = (pay, why, staked) => { wallet.pay(pay); msg.win(pay - staked, why + ' ·'); wallet.logResult(id, staked, pay); done(); };
+  const win = (pay, why, staked) => { wallet.pay(pay); msg.win(pay - staked, why + ' ·', staked); wallet.logResult(id, staked, pay); done(); };
   const lose = (why, staked) => { msg.lose(why); wallet.logResult(id, staked, 0); done(); };
   const done = () => { busy = false; bp.unlock(); };
 
@@ -496,7 +496,7 @@ function threeCard(root) {
     if (bonus) note += ` · Ante bonus ${ANTE_BONUS[pr.r]}:1 for ${pr.name}`;
     if (payout > 0) wallet.pay(payout);
     const net = payout - total;
-    if (net > 0) msg.win(net, note + ' ·'); else if (net === 0) msg.push(note); else msg.lose(note);
+    if (net > 0) msg.win(net, note + ' ·', total); else if (net === 0) msg.push(note); else msg.lose(note);
     wallet.logResult(id, total, payout);
     phase = 'bet'; bp.unlock();
   }
@@ -556,7 +556,7 @@ function caribbeanStud(root) {
     }
     if (payout > 0) wallet.pay(payout);
     const net = payout - total;
-    if (net > 0) msg.win(net, note + ' ·'); else if (net === 0) msg.push(note); else msg.lose(note);
+    if (net > 0) msg.win(net, note + ' ·', total); else if (net === 0) msg.push(note); else msg.lose(note);
     wallet.logResult(id, total, payout);
     phase = 'bet'; bp.unlock();
   }
@@ -610,7 +610,7 @@ function redDog(root) {
     }
     if (payout > 0) wallet.pay(payout);
     const net = payout - stake;
-    if (net > 0) msg.win(net, note + ' ·'); else if (net === 0) msg.push(note); else msg.lose(note);
+    if (net > 0) msg.win(net, note + ' ·', total); else if (net === 0) msg.push(note); else msg.lose(note);
     wallet.logResult(id, stake, payout);
     busy = false; bp.unlock();
   }
@@ -679,7 +679,7 @@ function hiLo(root) {
   function cashOut() {
     const payout = round2(stake * mult);
     wallet.pay(payout);
-    msg.win(payout - stake, `Cashed out at ${mult.toFixed(2)}× ·`);
+    msg.win(payout - stake, `Cashed out at ${mult.toFixed(2)}× ·`, stake);
     wallet.logResult(id, stake, payout);
     end();
   }

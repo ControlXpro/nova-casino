@@ -25,7 +25,9 @@ function roulette({ id, order, american }) {
     }).join(',');
     const inner = el('div.wheel-inner', { style: { background: `conic-gradient(${stops})` } });
     const hub = el('div.wheel-hub', {}, '—');
-    const wheel = el('div.wheel', {}, el('div.wheel-ptr', {}, '▼'), inner, hub);
+    const ball = el('div.wheel-ball');
+    const wheel = el('div.wheel', {}, el('div.wheel-ptr', {}, '▼'), inner, hub, ball);
+    let ballTurns = 0;
 
     /* --- board --- */
     const board = el('div.rt-board');
@@ -153,9 +155,14 @@ function roulette({ id, order, american }) {
       const target = 360 * 6 + (360 - (idx * seg + seg / 2));
       rotation += target;
       inner.style.transform = `rotate(${rotation}deg)`;
+      // ball counter-rotates, then settles into the winning pocket
+      ballTurns -= 360 * 9 + (idx * seg + seg / 2);
+      ball.style.transform = `rotate(${ballTurns}deg) translateY(-88px)`;
       hub.textContent = '…';
+      hub.classList.remove('landed');
       await sleep(4100);
       hub.textContent = String(n);
+      hub.classList.add('landed');
       hub.style.background = colorOf(n) === 'red' ? 'linear-gradient(140deg,#e34a63,#8e1a2e)'
         : colorOf(n) === 'green' ? 'linear-gradient(140deg,#3ddc84,#117a48)' : 'linear-gradient(140deg,#4a4a63,#15151f)';
       hub.style.color = '#fff';
@@ -167,7 +174,7 @@ function roulette({ id, order, american }) {
       if (payout > 0) wallet.pay(payout);
       const net = payout - staked;
       const label = `${n} ${colorOf(n).toUpperCase()}`;
-      if (net > 0) msg.win(net, `${label} · ${hits.join(', ')} ·`);
+      if (net > 0) msg.win(net, `${label} · ${hits.join(', ')} ·`, staked);
       else if (net === 0) msg.push(`${label} — break even`);
       else msg.lose(`${label} — ${hits.length ? hits.join(', ') : 'no winning bets'}`);
       wallet.logResult(id, staked, payout);
@@ -249,7 +256,7 @@ function sicBo(root) {
       mult = sum === t ? 1 + SUM_PAY[t] : 0;
     }
     const payout = round2(stake * mult);
-    if (payout > 0) { wallet.pay(payout); msg.win(payout - stake, `${sum} — ${choice.toUpperCase()} ·`); }
+    if (payout > 0) { wallet.pay(payout); msg.win(payout - stake, `${sum} — ${choice.toUpperCase()} ·`, stake); }
     else msg.lose(`${sum} — ${choice.toUpperCase()} loses`);
     wallet.logResult(id, stake, payout);
     busy = false; bp.unlock();
@@ -302,7 +309,7 @@ function craps(root) {
     if (sideChoice === 'field') {
       const mult = sum === 2 ? 3 : sum === 12 ? 4 : [3, 4, 9, 10, 11].includes(sum) ? 2 : 0;
       const payout = round2(lineStake * mult);
-      if (payout > 0) { wallet.pay(payout); msg.win(payout - lineStake, `${sum} pays ${mult - 1}:1 ·`); }
+      if (payout > 0) { wallet.pay(payout); msg.win(payout - lineStake, `${sum} pays ${mult - 1}:1 ·`, lineStake); }
       else msg.lose(`${sum} — field loses`);
       wallet.logResult(id, lineStake, payout);
       return end();
@@ -329,7 +336,7 @@ function craps(root) {
 
   function settle(playerWins, sum, why) {
     const payout = playerWins ? lineStake * 2 : 0;
-    if (payout) { wallet.pay(payout); msg.win(payout - lineStake, `${why} ·`); }
+    if (payout) { wallet.pay(payout); msg.win(payout - lineStake, `${why} ·`, lineStake); }
     else msg.lose(`${why} — ${sideChoice === 'pass' ? 'pass' : "don't pass"} loses`);
     wallet.logResult(id, lineStake, payout);
     point = null; pointOut.textContent = 'come-out roll';
@@ -427,7 +434,7 @@ function keno(root) {
     }
     const mult = KENO_PAY[picks.size][hits] || 0;
     const payout = round2(stake * mult);
-    if (payout > 0) { wallet.pay(payout); msg.win(payout - stake, `${hits}/${picks.size} hits — ${mult}× ·`); }
+    if (payout > 0) { wallet.pay(payout); msg.win(payout - stake, `${hits}/${picks.size} hits — ${mult}× ·`, stake); }
     else msg.lose(`${hits}/${picks.size} hits — no prize`);
     wallet.logResult(id, stake, payout);
     busy = false; bp.unlock();
@@ -504,7 +511,7 @@ function bingo(root) {
     else if (s.lines === 1) { mult = 2; note = '1 line'; }
     else if (s.corners) { mult = 3; note = 'Four corners'; }
     const payout = round2(stake * mult);
-    if (payout > 0) { wallet.pay(payout); msg.win(payout - stake, note + ' ·'); }
+    if (payout > 0) { wallet.pay(payout); msg.win(payout - stake, note + ' ·', stake); }
     else msg.lose(note);
     wallet.logResult(id, stake, payout);
     busy = false; bp.unlock();

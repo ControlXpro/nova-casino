@@ -177,8 +177,12 @@ function mountSlot(theme) {
       for (let r = 0; r < REELS; r++) {
         await sleep(190);
         for (let y = 0; y < ROWS; y++) {
-          cells[r][y].cell.classList.remove('spin');
-          cells[r][y].sym.textContent = theme.syms[grid[r][y]];
+          const { cell, sym } = cells[r][y];
+          cell.classList.remove('spin');
+          sym.textContent = theme.syms[grid[r][y]];
+          cell.classList.remove('landed');
+          void cell.offsetWidth;            // restart the bounce
+          cell.classList.add('landed');
         }
       }
       clearInterval(churn);
@@ -226,7 +230,7 @@ function mountSlot(theme) {
       if (total > 0) {
         wallet.pay(total);
         const x = total / bet;
-        msg.win(total, x >= 20 ? 'MEGA WIN' : x >= 8 ? 'BIG WIN' : 'WIN');
+        msg.win(total - bet, x >= 20 ? 'MEGA WIN' : x >= 8 ? 'BIG WIN' : 'WIN', bet);
         if (x >= 20) toast(`${theme.name}: ${x.toFixed(1)}× hit!`, 'win');
       } else {
         msg.lose('No win — spin again');
@@ -241,7 +245,7 @@ function mountSlot(theme) {
         `<b>5 reels · 3 rows · 20 fixed paylines.</b> Lines pay left to right from reel 1, 3 or more matching symbols.`,
         `<b>${theme.syms[WILD]} Wild</b> substitutes for every symbol except the scatter and pays on its own line combinations.`,
         `<b>${theme.syms[SCAT]} Scatter</b> pays anywhere on the reels. 3 or more awards <code>${model.freeSpins} free spins</code> at a <code>${model.fsMult}×</code> multiplier, retriggerable.`,
-        `Volatility <code>${model.label}</code> · Theoretical RTP <code>${model.rtp}%</code> · line bet = total bet ÷ 20.`,
+        `Volatility <code>${model.label}</code> · line bet = total bet ÷ 20.`,
         `Results come from <code>crypto.getRandomValues</code>. Credits are virtual and have no cash value.`));
   };
 }

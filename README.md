@@ -23,8 +23,21 @@ no withdrawals, no prizes, and no way to convert anything here into money.
 | **Instant** | 11 | Crash, Mines, Plinko, Dice, Limbo, Wheel of Fortune, Coin Flip, Tower, Penalty Shootout, Rock Paper Scissors, Hi-Lo |
 | **Lottery** | 3 | Keno, Bingo 75, Scratch Gold |
 
-Every game ships with a rules panel stating its payouts, mechanics and
-theoretical RTP.
+Every game has its own themed stage — background, accent colour, decorative
+motif and bespoke animations — plus a rules panel stating its payouts and
+mechanics.
+
+## Design
+
+The interface follows `design-system/nova-casino/MASTER.md` (dark navy shell,
+electric-blue + gold accents, dense grids, mobile tab bar). Each of the 56 games
+gets a distinct stage theme from `js/themes.js`, and `js/fx.js` provides the
+shared celebration layer — tiered win overlays, particle bursts, count-up
+counters and press ripples — on top of per-game animations (reel bounce,
+3D card deals, an orbiting roulette ball, 3D coin and dice, tile flips).
+
+RTP figures are no longer surfaced in the UI. The maths is unchanged and the
+simulator below still verifies it.
 
 ## How it is built
 

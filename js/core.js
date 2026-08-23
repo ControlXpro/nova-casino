@@ -165,7 +165,7 @@ export function el(spec, props, ...kids) {
       if (v == null || v === false) continue;
       if (k === 'html') node.innerHTML = v;
       else if (k === 'text') node.textContent = v;
-      else if (k === 'style' && typeof v === 'object') Object.assign(node.style, v);
+      else if (k === 'style' && typeof v === 'object') setStyle(node, v);
       else if (k.startsWith('on') && typeof v === 'function') node.addEventListener(k.slice(2), v);
       else if (k === 'dataset') Object.assign(node.dataset, v);
       else node.setAttribute(k, v === true ? '' : v);
@@ -173,6 +173,15 @@ export function el(spec, props, ...kids) {
   }
   add(node, kids);
   return node;
+}
+/* CSS custom properties must go through setProperty — assigning them onto
+   `style` as plain keys is silently ignored. */
+function setStyle(node, obj) {
+  for (const [k, v] of Object.entries(obj)) {
+    if (v == null) continue;
+    if (k.startsWith('--')) node.style.setProperty(k, String(v));
+    else node.style[k] = v;
+  }
 }
 function add(node, kids) {
   for (const k of kids.flat(4)) {
