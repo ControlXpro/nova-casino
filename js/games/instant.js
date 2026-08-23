@@ -3,6 +3,7 @@
 import { el, clear, fmt, fmtx, rnd, rndInt, pick, shuffle, sleep, wallet, round2, weighted, toast } from '../core.js';
 import { betPanel, msgLine, rules, optGrid } from '../ui.js';
 import { play, ticker } from '../sound.js';
+import { penalty } from './penalty.js';
 
 const G = (o) => o;
 const EDGE = 0.99;   // 1% house edge on the provably-fair style games
@@ -469,7 +470,8 @@ function wheelGame(root) {
 function coinFlip(root) {
   const id = 'coin-flip';
   let side = 'heads', busy = false;
-  const coin = el('div.cube', { style: { width: '110px', height: '110px', fontSize: '58px', margin: '0 auto' } }, '🪙');
+  const face = el('div.coin-face.heads');
+  const coin = el('div.coin3d-wrap', {}, face);
   const msg = msgLine();
   const picker = optGrid([
     { key: 'heads', label: '👑 HEADS', sub: '1.98×' },
@@ -482,13 +484,16 @@ function coinFlip(root) {
     const stake = bp.value;
     if (!bp.take()) return;
     busy = true; bp.lock(); msg.clear();
-    coin.classList.add('coin3d'); play('whoosh');
-    for (let i = 0; i < 12; i++) { coin.textContent = i % 2 ? '👑' : '🦅'; await sleep(70); }
+    play('whoosh');
+    face.classList.add('flipping');
+    for (let i = 0; i < 12; i++) {
+      face.className = 'coin-face flipping ' + (i % 2 ? 'heads' : 'tails');
+      await sleep(70);
+    }
     const res = rndInt(2) ? 'heads' : 'tails';
-    coin.textContent = res === 'heads' ? '👑' : '🦅';
-    coin.classList.remove('coin3d');
-    coin.classList.add('coin-land');
-    setTimeout(() => coin.classList.remove('coin-land'), 620);
+    face.className = 'coin-face landed ' + res;
+    play('coin');
+    setTimeout(() => { face.className = 'coin-face ' + res; }, 640);
     const payout = res === side ? round2(stake * 1.98) : 0;
     if (payout) { wallet.pay(payout); msg.win(payout - stake, `${res.toUpperCase()} ·`, stake); }
     else msg.lose(`${res.toUpperCase()} — you called ${side}`);
@@ -672,92 +677,14 @@ function tower(root) {
       `Theoretical return <code>99%</code> at every cash-out point.`));
 }
 
-/* ============================================================ PENALTY SHOOTOUT */
-function penalty(root) {
-  const id = 'penalty';
-  const ZONES = ['↖ top left', '↑ top centre', '↗ top right', '↙ bottom left', '↘ bottom right'];
-  let live = false, stake = 0, scored = 0;
-  const goal = el('div.tiles', { style: { gridTemplateColumns: 'repeat(3, auto)' } });
-  const zoneEls = [];
-  const msg = msgLine();
-  const info = el('div.readout');
-  const bp = betPanel({ start: 25, min: 1, max: 2000, action: 'TAKE THE KICK', onAction: go });
-  const btnOut = el('button.btn.btn-gold.btn-lg', { type: 'button', onclick: cashOut }, 'CASH OUT');
-  btnOut.hidden = true;
-  const multAt = (n) => Math.round(EDGE * Math.pow(5 / 3, n) * 100) / 100;
-
-  const layout = [0, 1, 2, 3, null, 4];
-  layout.forEach((z) => {
-    if (z === null) { goal.append(el('div', { style: { width: '56px' } })); return; }
-    const t = el('button.tile', { type: 'button', style: { width: '78px', height: '62px', fontSize: '15px' } }, ZONES[z].split(' ')[0]);
-    t.addEventListener('click', () => shoot(z));
-    zoneEls[z] = t; goal.append(t);
-  });
-
-  function paint() {
-    info.textContent = live
-      ? `${scored} scored · banked ${fmtx(multAt(scored))} · next ${fmtx(multAt(scored + 1))}`
-      : `Keeper covers 2 of 5 corners · each goal pays ${fmtx(multAt(1))}`;
-    btnOut.textContent = `CASH OUT ${fmt(round2(stake * multAt(scored)))}`;
-  }
-  function go() {
-    if (live) return;
-    stake = bp.value;
-    if (!bp.take()) return;
-    scored = 0; live = true; bp.lock(); btnOut.hidden = false;
-    zoneEls.forEach((t) => { t.className = 'tile'; });
-    msg.set('Pick your corner', 'push'); paint();
-  }
-  async function shoot(z) {
-    if (!live) return;
-    const bag = shuffle([0, 1, 2, 3, 4]).slice(0, 2);
-    zoneEls.forEach((t) => { t.className = 'tile'; });
-    await sleep(120);
-    for (const b of bag) { zoneEls[b].className = 'tile bomb'; zoneEls[b].textContent = '🧤'; }
-    if (bag.includes(z)) {
-      zoneEls[z].className = 'tile bomb'; zoneEls[z].textContent = '🧤';
-      msg.lose(`Saved! ${scored} goal${scored === 1 ? '' : 's'} lost`);
-      wallet.logResult(id, stake, 0);
-      return end();
-    }
-    zoneEls[z].className = 'tile hit'; zoneEls[z].textContent = '⚽'; play('winSmall');
-    scored++;
-    msg.set(`GOAL! ${fmtx(multAt(scored))} banked`, 'win');
-    paint();
-    setTimeout(() => { zoneEls.forEach((t, i) => { t.className = 'tile'; t.textContent = ZONES[i].split(' ')[0]; }); }, 900);
-  }
-  function cashOut() {
-    if (!live || scored === 0) { if (!scored) toast('Score at least one goal first.'); return; }
-    const payout = round2(stake * multAt(scored));
-    wallet.pay(payout);
-    msg.win(payout - stake, `Cashed out after ${scored} goals ·`, stake);
-    wallet.logResult(id, stake, payout);
-    end();
-  }
-  function end() {
-    live = false; btnOut.hidden = true; bp.unlock();
-    setTimeout(() => zoneEls.forEach((t, i) => { t.className = 'tile'; t.textContent = ZONES[i].split(' ')[0]; }), 1200);
-    paint();
-  }
-
-  paint();
-  root.append(goal, info, msg.node,
-    el('div', { style: { display: 'flex', gap: '10px', alignItems: 'flex-end', flexWrap: 'wrap' } }, bp.node, btnOut),
-    rules('PENALTY SHOOTOUT',
-      `Pick one of five corners. The keeper covers <b>two at random</b> — score if you avoid both.`,
-      `Win chance per kick is <code>60%</code>, and each goal multiplies your stake by <code>1.65×</code>.`,
-      `Keep shooting to compound, or cash out. One save ends the run.`,
-      `Theoretical return <code>99%</code>.`));
-}
-
 /* ============================================================ ROCK PAPER SCISSORS */
 function rps(root) {
   const id = 'rps';
   let busy = false;
   const MOVES = [{ k: 'rock', e: '✊' }, { k: 'paper', e: '✋' }, { k: 'scissors', e: '✌️' }];
-  const you = el('div.cube', { style: { width: '90px', height: '90px', fontSize: '46px' } }, '❔');
-  const them = el('div.cube', { style: { width: '90px', height: '90px', fontSize: '46px' } }, '❔');
-  const arena = el('div.cubes', {}, you, el('div', { style: { alignSelf: 'center', fontSize: '20px', color: 'var(--dim)' } }, 'VS'), them);
+  const you = el('div.rps-hand.me.rock');
+  const them = el('div.rps-hand.rock');
+  const arena = el('div.rps-arena', {}, you, el('div.rps-vs', {}, 'VS'), them);
   const msg = msgLine();
   let choice = 'rock';
   const picker = optGrid(MOVES.map((m) => ({ key: m.k, label: `${m.e} ${m.k.toUpperCase()}`, sub: 'win 1.94×' })), (k) => { choice = k; });
@@ -768,10 +695,17 @@ function rps(root) {
     const stake = bp.value;
     if (!bp.take()) return;
     busy = true; bp.lock(); msg.clear();
-    for (let i = 0; i < 9; i++) { them.textContent = MOVES[i % 3].e; await sleep(80); }
+    you.classList.add('shaking'); them.classList.add('shaking');
+    for (let i = 0; i < 9; i++) {
+      them.className = 'rps-hand shaking ' + MOVES[i % 3].k;
+      you.className = 'rps-hand me shaking ' + MOVES[(i + 1) % 3].k;
+      await sleep(80);
+    }
     const mine = MOVES.find((m) => m.k === choice);
     const theirs = MOVES[rndInt(3)];
-    you.textContent = mine.e; them.textContent = theirs.e;
+    you.className = 'rps-hand me ' + mine.k;
+    them.className = 'rps-hand ' + theirs.k;
+    play('click');
     const beats = { rock: 'scissors', paper: 'rock', scissors: 'paper' };
     let payout = 0;
     if (mine.k === theirs.k) { payout = stake; wallet.pay(payout); msg.push(`Both ${mine.k} — push`); }
@@ -802,6 +736,6 @@ export const instantGames = [
   G({ id: 'scratch-diamonds', name: 'Diamond Scratch', cat: 'lottery', icon: '💎', art: 'linear-gradient(160deg,#123a4d,#0b0d1c)', rtp: 94.0, vol: 'High', tags: ['new'], mount: scratch({ id: 'scratch-diamonds' }) }),
   G({ id: 'scratch-lucky7', name: 'Lucky Sevens', cat: 'lottery', icon: '7️⃣', art: 'linear-gradient(160deg,#4d1224,#0b0d1c)', rtp: 94.0, vol: 'Medium', mount: scratch({ id: 'scratch-lucky7' }) }),
   G({ id: 'tower', name: 'Tower', cat: 'instant', icon: '🗼', art: 'linear-gradient(160deg,#1d2a52,#0b0d1c)', rtp: 99.0, vol: 'High', tags: ['new'], mount: tower }),
-  G({ id: 'penalty', name: 'Penalty Shootout', cat: 'instant', icon: '⚽', art: 'linear-gradient(160deg,#123d1d,#0b0d1c)', rtp: 99.0, vol: 'Medium', tags: ['new'], mount: penalty }),
+  G({ id: 'penalty', name: 'Penalty Shootout', cat: 'instant', icon: '⚽', art: 'linear-gradient(160deg,#123d1d,#0b0d1c)', rtp: 99.0, vol: 'Medium', tags: ['hot'], mount: penalty }),
   G({ id: 'rps', name: 'Rock Paper Scissors', cat: 'instant', icon: '✊', art: 'linear-gradient(160deg,#4d1236,#0b0d1c)', rtp: 98.0, vol: 'Low', mount: rps }),
 ];

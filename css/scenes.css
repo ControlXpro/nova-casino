@@ -1,0 +1,119 @@
+/* ═══════════════════════════════════════════════════════════
+   Playable game scenes — real artwork you interact with,
+   not buttons with a background behind them.
+   ═══════════════════════════════════════════════════════════ */
+
+/* ── penalty shootout ── */
+.pk-pitch{
+  position:relative;width:100%;aspect-ratio:16/9;overflow:hidden;
+  border-radius:var(--r-lg);border:1px solid var(--line);
+  background:url("art/_pk_goal.webp") center/cover, #0a1410;
+  box-shadow:inset 0 0 60px rgba(0,0,0,.6),0 18px 40px rgba(0,0,0,.5);
+  user-select:none}
+.pk-pitch::after{content:"";position:absolute;inset:0;pointer-events:none;
+  background:linear-gradient(180deg,transparent 55%,rgba(4,10,7,.55))}
+
+/* keeper */
+.pk-keeper{position:absolute;left:50%;bottom:20%;z-index:3;
+  width:20%;aspect-ratio:1;margin-left:-10%;
+  background:url("art/_pk_keeper.webp") center/contain no-repeat;
+  filter:drop-shadow(0 8px 12px rgba(0,0,0,.6));
+  transition:transform .42s cubic-bezier(.3,.7,.4,1.1)}
+.pk-keeper.dive.left   {transform:translateX(-115%) rotate(-32deg)}
+.pk-keeper.dive.right  {transform:translateX(115%)  rotate(32deg)}
+.pk-keeper.dive.centre {transform:scale(1.12)}
+.pk-keeper.dive.left.high   {transform:translate(-115%,-46%) rotate(-52deg)}
+.pk-keeper.dive.right.high  {transform:translate(115%,-46%)  rotate(52deg)}
+.pk-keeper.dive.centre.high {transform:translateY(-40%) scale(1.12)}
+
+/* ball */
+.pk-ball{position:absolute;left:50%;top:92%;z-index:4;
+  width:9%;aspect-ratio:1;
+  transform:translate(-50%,-50%);
+  background:url("art/_ball.webp") center/contain no-repeat;
+  filter:drop-shadow(0 6px 8px rgba(0,0,0,.55))}
+
+/* aim points */
+.pk-targets{position:absolute;inset:0;z-index:5}
+.pk-zone{position:absolute;transform:translate(-50%,-50%);
+  width:64px;height:64px;padding:0;border-radius:50%;
+  border:2px dashed rgba(255,255,255,.45);
+  background:radial-gradient(circle,rgba(255,255,255,.14),transparent 68%);
+  color:#fff;opacity:0;pointer-events:none;
+  transition:opacity .2s var(--ease),transform .16s var(--ease),
+             background .16s var(--ease),border-color .16s var(--ease)}
+.pk-pitch.armed .pk-zone{opacity:1;pointer-events:auto}
+.pk-zone:hover,.pk-zone:focus-visible{
+  border-color:var(--gold);border-style:solid;
+  background:radial-gradient(circle,rgba(255,197,49,.34),transparent 70%);
+  transform:translate(-50%,-50%) scale(1.16)}
+.pk-cross{font-size:22px;line-height:1;opacity:.85;text-shadow:0 2px 4px rgba(0,0,0,.7)}
+
+/* goal / save flash */
+.pk-flash{position:absolute;inset:0;z-index:6;pointer-events:none;opacity:0}
+.pk-flash.goal{background:radial-gradient(circle at 50% 40%,rgba(46,224,106,.42),transparent 62%);
+  animation:pkFlash .8s ease-out}
+.pk-flash.save{background:radial-gradient(circle at 50% 45%,rgba(255,77,106,.45),transparent 62%);
+  animation:pkFlash .7s ease-out}
+@keyframes pkFlash{0%{opacity:0}18%{opacity:1}100%{opacity:0}}
+
+.pk-hud{display:flex;align-items:center;gap:8px;flex-wrap:wrap;
+  margin-top:var(--s3);font-size:12px;color:var(--dim)}
+.pk-goals{font-family:"JetBrains Mono",monospace;font-size:20px;font-weight:700;color:var(--gold)}
+.pk-mult{margin-left:auto;font-family:"JetBrains Mono",monospace;color:var(--faint)}
+
+@media(max-width:720px){
+  .pk-zone{width:52px;height:52px}
+  .pk-cross{font-size:17px}
+  .pk-keeper{width:24%;margin-left:-12%}
+  .pk-ball{width:11%}
+}
+
+/* ── sprite-backed tiles (mines, tower) ── */
+.tile.gem, .tile.bomb{background-size:74% 74%;background-position:center;background-repeat:no-repeat}
+.tile.gem{background-image:url("art/_gem.webp");
+  background-color:rgba(46,224,106,.12);color:transparent}
+.tile.bomb{background-image:url("art/_bomb.webp");
+  background-color:rgba(255,77,106,.14);color:transparent}
+.tile.gem::first-line,.tile.bomb::first-line{color:transparent}
+
+/* ── coin flip ── */
+.coin3d-wrap{perspective:900px;width:132px;height:132px;margin:0 auto}
+.coin-face{width:100%;height:100%;background-size:contain;background-repeat:no-repeat;
+  background-position:center;filter:drop-shadow(0 8px 14px rgba(0,0,0,.55))}
+.coin-face.heads{background-image:url("art/_coin_h.webp")}
+.coin-face.tails{background-image:url("art/_coin_t.webp")}
+.coin-face.flipping{animation:coinTumble .34s linear infinite}
+@keyframes coinTumble{to{transform:rotateY(360deg)}}
+.coin-face.landed{animation:coinLand2 .6s var(--pop)}
+@keyframes coinLand2{0%{transform:rotateY(900deg) scale(.7)}100%{transform:none}}
+
+/* ── rock paper scissors ── */
+.rps-hand{width:112px;height:112px;background-size:contain;background-repeat:no-repeat;
+  background-position:center;filter:drop-shadow(0 8px 14px rgba(0,0,0,.5))}
+.rps-hand.rock{background-image:url("art/_rps_rock.webp")}
+.rps-hand.paper{background-image:url("art/_rps_paper.webp")}
+.rps-hand.scissors{background-image:url("art/_rps_scissors.webp")}
+.rps-hand.me{transform:scaleX(-1)}
+.rps-hand.shaking{animation:rpsShake .28s ease-in-out infinite}
+@keyframes rpsShake{0%,100%{transform:translateY(0) rotate(0)}
+  50%{transform:translateY(-14px) rotate(-8deg)}}
+.rps-hand.me.shaking{animation:rpsShakeMe .28s ease-in-out infinite}
+@keyframes rpsShakeMe{0%,100%{transform:scaleX(-1) translateY(0) rotate(0)}
+  50%{transform:scaleX(-1) translateY(-14px) rotate(-8deg)}}
+.rps-arena{display:flex;align-items:center;justify-content:center;gap:var(--s5);
+  min-height:150px;margin:var(--s3) 0}
+.rps-vs{font-size:14px;font-weight:800;letter-spacing:.14em;color:var(--faint)}
+
+/* ── wheel of fortune / big six ── */
+.fw.art{background-image:url("art/_wheel.webp");background-size:contain;
+  background-repeat:no-repeat;background-position:center;border:0;
+  filter:drop-shadow(0 12px 26px rgba(0,0,0,.6))}
+
+/* ── plinko ── */
+.plinko-ball-art{background:url("art/_orb.webp") center/contain no-repeat}
+
+@media(prefers-reduced-motion:reduce){
+  .pk-keeper,.pk-ball{transition:none!important}
+  .pk-flash,.coin-face.flipping,.rps-hand.shaking{animation:none!important}
+}
