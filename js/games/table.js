@@ -483,7 +483,8 @@ function keno({ id, pay = KENO_PAY, label = 'KENO' }) {
     }
     const mult = pay[picks.size][hits] || 0;
     const payout = round2(stake * mult);
-    if (payout > 0) { wallet.pay(payout); msg.win(payout - stake, `${hits}/${picks.size} hits — ${mult}× ·`, stake); }
+    if (payout > stake) { wallet.pay(payout); msg.win(payout - stake, `${hits}/${picks.size} hits — ${mult}× ·`, stake); }
+    else if (payout > 0) { wallet.pay(payout); msg.push(`${hits}/${picks.size} hits — ${mult}× returns your stake`); }
     else msg.lose(`${hits}/${picks.size} hits — no prize`);
     wallet.logResult(id, stake, payout);
     busy = false; bp.unlock();

@@ -1,0 +1,127 @@
+/* ═══════════════════════════════════════════════════════════
+   Slot cabinet + image reel strips, crash rocket, live tables.
+   Loaded last.
+   ═══════════════════════════════════════════════════════════ */
+
+/* ── the cabinet ── */
+.slot-machine{
+  position:relative;padding:0;overflow:hidden;
+  border-radius:var(--r-lg);
+  border:2px solid color-mix(in srgb,var(--accent) 45%,#2a3350);
+  background:linear-gradient(180deg,#131a2c,#0a0e1a);
+  box-shadow:0 0 0 1px rgba(0,0,0,.6),0 22px 46px rgba(0,0,0,.55),
+             inset 0 1px 0 rgba(255,255,255,.09);
+}
+/* themed backdrop behind the reels */
+.cab-art{position:absolute;inset:0;z-index:0;background-size:cover;background-position:center;
+  filter:saturate(1.15) brightness(.55);opacity:.65}
+.slot-machine::after{content:"";position:absolute;inset:0;z-index:1;pointer-events:none;
+  background:radial-gradient(120% 80% at 50% 0%,transparent 30%,rgba(4,7,14,.72) 100%)}
+
+/* marquee light bars top and bottom */
+.cab-top,.cab-bot{position:relative;z-index:3;height:14px;
+  background:
+    repeating-linear-gradient(90deg,
+      color-mix(in srgb,var(--accent) 90%,#fff) 0 6px, transparent 6px 18px),
+    linear-gradient(180deg,#1a2237,#0d1322);
+  box-shadow:inset 0 0 10px rgba(0,0,0,.7);
+  animation:cabChase 1.1s linear infinite}
+.cab-bot{animation-direction:reverse}
+@keyframes cabChase{to{background-position:24px 0,0 0}}
+
+/* ── reel window ── */
+.reel-window{position:relative;z-index:2;padding:12px}
+.reels{display:grid;gap:6px}
+.reel{position:relative;overflow:hidden;border-radius:10px;
+  background:rgba(3,6,12,.55);
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,.07),
+             inset 0 10px 18px rgba(0,0,0,.55), inset 0 -10px 18px rgba(0,0,0,.55);
+  /* window height = 3 cells */
+  height:calc(var(--cell,78px) * 3 + 12px)}
+.strip{display:grid;gap:0;will-change:transform}
+.cellw{position:relative;width:100%;height:var(--cell,78px);
+  display:grid;place-items:center;padding:2px;
+  background:none;border:0;border-radius:8px;overflow:visible}
+.symi{width:100%;height:100%;object-fit:contain;display:block;
+  filter:drop-shadow(0 3px 5px rgba(0,0,0,.5));
+  transition:filter .2s var(--ease)}
+.strip.spinning .symi{filter:blur(3px) drop-shadow(0 3px 5px rgba(0,0,0,.5))}
+
+/* winning cell */
+.cellw.hit{z-index:4}
+.cellw.hit::before{content:"";position:absolute;inset:1px;border-radius:9px;pointer-events:none;
+  border:2px solid var(--accent);
+  box-shadow:0 0 20px color-mix(in srgb,var(--accent) 75%,transparent),
+             inset 0 0 16px color-mix(in srgb,var(--accent) 40%,transparent);
+  animation:hitPulse .7s ease-in-out infinite alternate}
+@keyframes hitPulse{to{box-shadow:0 0 34px color-mix(in srgb,var(--accent) 95%,transparent),
+  inset 0 0 22px color-mix(in srgb,var(--accent) 55%,transparent)}}
+.cellw.hit .symi{animation:hitPop .45s var(--pop);filter:drop-shadow(0 0 12px var(--accent))}
+@keyframes hitPop{0%{transform:scale(1)}55%{transform:scale(1.18)}100%{transform:scale(1.06)}}
+
+/* paytable with real symbols */
+.pt-sym{width:30px;height:30px;object-fit:contain;flex:none;border-radius:5px}
+.paytable{grid-template-columns:repeat(auto-fill,minmax(122px,1fr))}
+
+@media(min-width:721px){ .reels{--cell:88px} }
+@media(max-width:720px){ .reels{--cell:60px} .reel-window{padding:8px} .reels{gap:4px} }
+@media(max-width:420px){ .reels{--cell:52px} }
+
+/* ── crash: rocket + starfield ── */
+.crash-box{background:#060912}
+.crash-sky{position:absolute;inset:0;z-index:0;background-size:cover;background-position:center;
+  opacity:.75}
+.crash-sky.drift{animation:skyDrift 26s linear infinite alternate}
+@keyframes skyDrift{to{transform:scale(1.12) translateY(-4%)}}
+.rocket{position:absolute;z-index:3;width:104px;height:104px;
+  left:8%;bottom:8%;pointer-events:none;
+  background-size:contain;background-repeat:no-repeat;background-position:center;
+  mix-blend-mode:screen;                 /* knocks the black plate out */
+  filter:drop-shadow(0 0 14px rgba(255,140,60,.5));
+  transition:left .12s linear,bottom .12s linear,transform .2s var(--ease)}
+.crash-box.busted .rocket{animation:rocketFall .6s ease-in forwards}
+@keyframes rocketFall{to{transform:rotate(130deg) translateY(160px);opacity:0}}
+.boom{position:absolute;z-index:4;width:220px;height:220px;pointer-events:none;
+  background-size:contain;background-repeat:no-repeat;background-position:center;
+  mix-blend-mode:screen;transform:translate(-50%,-50%) scale(.3);opacity:0}
+.boom.go{animation:boomPop .7s ease-out forwards}
+@keyframes boomPop{
+  0%{opacity:0;transform:translate(-50%,-50%) scale(.3)}
+  25%{opacity:1;transform:translate(-50%,-50%) scale(1.05)}
+  100%{opacity:0;transform:translate(-50%,-50%) scale(1.5)}}
+.crash-mult{text-shadow:0 4px 18px rgba(0,0,0,.8)}
+
+/* ── live table dressing ── */
+.felt-table{background-image:linear-gradient(175deg,#6b4a25,#3e2a13 42%,#2a1c0c)}
+.table-hud{display:flex;align-items:center;gap:var(--s2);flex-wrap:wrap;
+  margin-bottom:var(--s3);font-size:11px}
+.live-dot{width:8px;height:8px;border-radius:50%;background:var(--live);
+  box-shadow:0 0 0 0 rgba(255,59,92,.6);animation:pulse 1.8s infinite}
+.table-hud b{color:var(--txt);font-weight:700}
+.table-hud .sim-tag{margin-left:auto}
+.table-id{font-family:"JetBrains Mono",monospace;color:var(--faint)}
+.seats-open{color:var(--win);font-weight:700}
+
+/* shoe history — the rounds "already played" when you sit down */
+.shoe-hist{display:flex;gap:4px;flex-wrap:wrap;align-items:center;margin-bottom:var(--s3)}
+.shoe-hist>span{font-size:9px;font-weight:800;letter-spacing:.12em;color:var(--faint);
+  margin-right:2px}
+.sh{width:24px;height:24px;border-radius:6px;display:grid;place-items:center;
+  font-family:"JetBrains Mono",monospace;font-size:10px;font-weight:800;color:#fff;
+  animation:luckyPop .3s var(--pop) both}
+.sh.w{background:linear-gradient(180deg,#3ddc84,#18b755);color:#04220f}
+.sh.l{background:linear-gradient(180deg,#ff7089,#d5304c)}
+.sh.p{background:linear-gradient(180deg,#4b8cff,#1f6dff)}
+.sh.t{background:linear-gradient(180deg,#ffd875,#ffc531);color:var(--on-gold)}
+
+/* companion seats around the felt */
+.bot-row{position:relative}
+.bot-seat .seat-name::before{content:"";display:inline-block;width:5px;height:5px;
+  border-radius:50%;background:var(--win);margin-right:5px;vertical-align:middle}
+.bot-box.thinking .felt-spot{border-color:var(--gold);
+  animation:nextPulse 1.1s ease-in-out infinite alternate}
+
+@media(prefers-reduced-motion:reduce){
+  .cab-top,.cab-bot,.crash-sky.drift,.cellw.hit::before{animation:none!important}
+  .strip{transition:none!important}
+}

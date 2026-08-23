@@ -17,7 +17,28 @@ function crash(root) {
   const canvas = el('canvas');
   const multEl = el('div.crash-mult', {}, '1.00×');
   const stateEl = el('div.crash-state', {}, 'READY');
-  const box = el('div.crash-box', {}, canvas, stateEl, multEl);
+  const sky = el('div.crash-sky.drift', {
+    'aria-hidden': 'true',
+    style: { backgroundImage: 'url("art/_space.webp")' },
+  });
+  const rocket = el('div.rocket', {
+    'aria-hidden': 'true',
+    style: { backgroundImage: 'url("art/_rocket.webp")' },
+  });
+  const boom = el('div.boom', {
+    'aria-hidden': 'true',
+    style: { backgroundImage: 'url("art/_boom.webp")' },
+  });
+  const box = el('div.crash-box', {}, sky, canvas, rocket, boom, stateEl, multEl);
+
+  /** Fly the rocket along the same curve the canvas draws. */
+  function flyTo(progress) {
+    const x = 6 + progress * 74;              // % across
+    const y = 6 + progress * 64;              // % up
+    rocket.style.left = x + '%';
+    rocket.style.bottom = y + '%';
+    rocket.style.transform = `rotate(${-6 - progress * 6}deg)`;
+  }
   const histRow = el('div.history', { style: { marginTop: '10px' } });
   const msg = msgLine();
 
@@ -58,6 +79,7 @@ function crash(root) {
     mult = Math.max(1, Math.round(Math.pow(1.0718, dt * 10) * 100) / 100);
     if (mult >= crashAt) return bust();
     multEl.textContent = fmtx(mult);
+    flyTo(Math.min(1, Math.log(mult) / Math.log(24)));
     const autoAt = parseFloat(autoInput.value) || 0;
     if (!cashed && autoAt >= 1.01 && mult >= autoAt) return cashOut();
     draw();
@@ -70,6 +92,9 @@ function crash(root) {
     live = true; cashed = false; mult = 1; crashAt = rollCrash();
     stateEl.textContent = 'IN FLIGHT'; multEl.style.color = 'var(--accent, var(--gold))';
     box.classList.add('flying'); box.classList.remove('busted');
+    boom.classList.remove('go');
+    rocket.style.transition = 'none'; flyTo(0);
+    void rocket.offsetWidth; rocket.style.transition = '';
     stopFlight = ticker('tickUp', 220);
     msg.clear(); bp.setAction('CASH OUT', 'btn-green'); bp.lock(); bp.actionBtn.disabled = false;
     t0 = performance.now();
@@ -91,6 +116,10 @@ function crash(root) {
     stateEl.textContent = 'CRASHED';
     box.classList.remove('flying'); box.classList.add('busted');
     stopFlight?.(); stopFlight = null; play('explode');
+    // detonate where the rocket actually is
+    boom.style.left = rocket.style.left || '20%';
+    boom.style.bottom = rocket.style.bottom || '20%';
+    boom.classList.remove('go'); void boom.offsetWidth; boom.classList.add('go');
     if (!cashed) { multEl.style.color = 'var(--lose)'; msg.lose(`Crashed at ${fmtx(crashAt)}`); wallet.logResult(id, stake, 0); }
     draw();
     history.unshift(crashAt); if (history.length > 12) history.pop();

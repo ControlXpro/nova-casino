@@ -6,7 +6,7 @@ import {
   evalPoker, cmpPoker, RANKS,
 } from '../ui.js';
 import { feltTable, seat, spot, layCards } from '../felt.js';
-import { randomNames, randomFlag, basicStrategy, botStake } from '../players.js';
+import { randomNames, randomFlag, basicStrategy, botStake, tableHud, shoeHistory } from '../players.js';
 import { play } from '../sound.js';
 
 const G = (o) => o;
@@ -42,6 +42,12 @@ function blackjack({ decks, name, id, h17 = false }) {
         `Dealer must draw to 16 and stand on ${h17 ? 'soft 17' : 'all 17s'}`],
     });
     table.surface.append(dealerSeat, botRow, playerRow);
+
+    /* You are joining a table that has been running: the HUD shows who is
+       seated and the shoe strip shows the rounds dealt before you sat down.
+       Both are simulated and labelled as such. */
+    const hud = tableHud({ seats: SEATS + 1, name: 'Blackjack' });
+    const shoeStrip = shoeHistory(12);
 
     const msg = msgLine();
     const shoeInfo = el('div.readout');
@@ -230,7 +236,7 @@ function blackjack({ decks, name, id, h17 = false }) {
     }
 
     render();
-    root.append(table, actions, msg.node, bp.node, shoeInfo,
+    root.append(hud, shoeStrip, table, actions, msg.node, bp.node, shoeInfo,
       rules('BLACKJACK RULES',
         `<b>${decks}-deck shoe</b>, reshuffled when it runs low. Blackjack pays <code>3:2</code>, other wins pay <code>1:1</code>.`,
         `Dealer ${h17 ? 'hits' : 'stands on'} <code>soft 17</code>. Double on any two cards, split up to 4 hands.`,
@@ -330,7 +336,10 @@ function baccarat({ id, noComm = false }) {
   }
 
   choose('player');
-  root.append(table, msg.node, bp.node,
+  root.append(
+    tableHud({ seats: 5, name: noComm ? 'No Commission Baccarat' : 'Baccarat' }),
+    shoeHistory(14, ['w', 'l', 't', 'w', 'l']),
+    table, msg.node, bp.node,
     rules(noComm ? 'NO COMMISSION BACCARAT' : 'BACCARAT — PUNTO BANCO',
       `Cards count face value, 10s and faces are <code>0</code>, only the last digit of the total counts.`,
       `Third-card draws follow the standard punto banco tableau — no decisions to make.`,
@@ -561,7 +570,8 @@ function casinoWar(root) {
   const lose = (why, staked) => { msg.lose(why); wallet.logResult(id, staked, 0); done(); };
   const done = () => { busy = false; bp.unlock(); };
 
-  root.append(table, warRow, msg.node, bp.node,
+  root.append(tableHud({ seats: 4, name: 'Casino War' }), shoeHistory(12),
+    table, warRow, msg.node, bp.node,
     rules('CASINO WAR',
       `Highest card wins — aces are high, suits are ignored. A win pays <code>1:1</code>.`,
       `On a tie you either <b>surrender</b> and get half your stake back, or <b>go to war</b>: match your bet, three cards are burned, and one more card is dealt each.`,
@@ -643,7 +653,8 @@ function threeCard(root) {
   }
   const cmpKey = (a, b) => { for (let i = 0; i < a.length; i++) if (a[i] !== b[i]) return a[i] - b[i]; return 0; };
 
-  root.append(table, row, msg.node, bp.node,
+  root.append(tableHud({ seats: 5, name: 'Three Card Poker' }), shoeHistory(12),
+    table, row, msg.node, bp.node,
     rules('THREE CARD POKER',
       `Post an <b>ante</b>, see your three cards, then either match it as a <b>play</b> bet or fold and lose the ante.`,
       `Ranking (3 cards): <code>Straight Flush > Three of a Kind > Straight > Flush > Pair > High Card</code>.`,
@@ -707,7 +718,8 @@ function caribbeanStud(root) {
     wallet.logResult(id, total, payout);
     phase = 'bet'; bp.unlock();
   }
-  root.append(table, row, msg.node, bp.node,
+  root.append(tableHud({ seats: 6, name: 'Caribbean Stud' }), shoeHistory(12),
+    table, row, msg.node, bp.node,
     rules('CARIBBEAN STUD POKER',
       `Ante, receive five cards and see one dealer card. Either <b>raise</b> for twice the ante or <b>fold</b>.`,
       `Dealer qualifies with <b>Ace-King or better</b>. If not, the ante pays 1:1 and the raise pushes.`,
@@ -767,7 +779,8 @@ function redDog(root) {
     wallet.logResult(id, stake, payout);
     busy = false; bp.unlock();
   }
-  root.append(table, msg.node, bp.node,
+  root.append(tableHud({ seats: 3, name: 'Red Dog' }), shoeHistory(10),
+    table, msg.node, bp.node,
     rules('RED DOG (ACEY-DEUCEY)',
       `Two cards are dealt. You win if a third card falls <b>strictly between</b> them.`,
       `The payout depends on the gap: spread 1 pays <code>5:1</code>, spread 2 <code>4:1</code>, spread 3 <code>2:1</code>, spread 4+ <code>1:1</code>.`,

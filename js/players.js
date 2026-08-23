@@ -5,7 +5,7 @@
    floor feels alive. Everywhere they surface they are labelled as simulated,
    because presenting invented players as real ones would be a lie the player
    can't check. */
-import { rndInt, rnd, pick, shuffle, round2 } from './core.js';
+import { el, rndInt, rnd, pick, shuffle, round2 } from './core.js';
 
 const ADJ = ['Lucky', 'Silent', 'Golden', 'Neon', 'Rapid', 'Iron', 'Wild', 'Royal', 'Turbo',
   'Shadow', 'Crimson', 'Frost', 'Atomic', 'Velvet', 'Cosmic', 'Diamond', 'Midnight', 'Solar',
@@ -85,4 +85,34 @@ export function leaderboard(games, n = 8) {
     };
   });
   return rows.sort((a, b) => b.win - a.win);
+}
+
+/* ── live-table dressing ────────────────────────────────────
+   When you open a table it should feel like sitting down at one already in
+   progress. Both helpers below are decoration and carry a SIMULATED tag. */
+
+const TABLE_IDS = ['NV', 'BJ', 'RL', 'BC', 'TP', 'CH'];
+
+/** Header strip: table id, seated players, open seats, live dot. */
+export function tableHud({ seats = 4, name = 'Table' } = {}) {
+  const id = pick(TABLE_IDS) + '-' + String(100 + rndInt(900));
+  const open = Math.max(0, 7 - seats);
+  return el('div.table-hud', {},
+    el('span.live-dot', { 'aria-hidden': 'true' }),
+    el('b', {}, name),
+    el('span.table-id', {}, id),
+    el('span', {}, `${seats} seated`),
+    el('span.seats-open', {}, `${open} seat${open === 1 ? '' : 's'} open`),
+    el('span.sim-tag', {}, 'SIMULATED'));
+}
+
+/** The last N results dealt on this table before you joined. */
+export function shoeHistory(n = 12, kinds = ['w', 'l', 'l', 'p', 'w', 'l', 't']) {
+  const labels = { w: 'W', l: 'L', p: 'P', t: 'T' };
+  const row = el('div.shoe-hist', {}, el('span', {}, 'SHOE'));
+  for (let i = 0; i < n; i++) {
+    const k = pick(kinds);
+    row.append(el('div.sh.' + k, { style: { animationDelay: i * 28 + 'ms' } }, labels[k]));
+  }
+  return row;
 }

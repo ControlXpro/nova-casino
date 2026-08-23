@@ -80,8 +80,12 @@ export function msgLine() {
     clear() { node.className = 'msg'; node.textContent = ''; },
     /** @param {number} amount net win  @param {number} [stake] enables the tiered celebration */
     win(amount, prefix = 'WIN', stake = 0) {
-      this.set(`${prefix} +$${fmt(amount)}`, 'win', amount > 0);
-      if (amount <= 0) return;
+      // Guard: a payout at or below the stake is not a win. Dressing one up as
+      // "WIN" is the classic losses-disguised-as-wins pattern, so say plainly
+      // what came back instead.
+      if (amount < 0) return this.set(`Returned $${fmt(stake + amount)} of your $${fmt(stake)} stake`, 'push');
+      if (amount === 0) return this.push('PUSH — stake returned');
+      this.set(`${prefix} +$${fmt(amount)}`, 'win', true);
       const mult = stake > 0 ? (amount + stake) / stake : 0;
       if (mult >= 3) celebrate(stage(), amount + stake, mult);
       else coinBurst(node, 12);

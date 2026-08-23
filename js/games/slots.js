@@ -159,34 +159,53 @@ function mountSlot(theme) {
     const cells = [];               // cells[reel][row]
     let busy = false;
 
+    /* Reel strips: each reel is a tall column of symbol images. The visible
+       window shows ROWS of them; spinning translates the strip and lands it
+       on the result. */
+    const STRIP = 18;                       // symbols per strip, cycled
+    const sym = (i) => `art/sym/${theme.id}/${i}.webp`;
+    const strips = [];                      // strips[reel] = { node, imgs }
+
     const reelsWrap = el('div.reels', {
-      style: { gridTemplateColumns: `repeat(${REELS}, auto)` },
+      style: { gridTemplateColumns: `repeat(${REELS}, 1fr)` },
     });
+
     for (let r = 0; r < REELS; r++) {
-      const col = el('div.reel');
-      cells[r] = [];
-      for (let y = 0; y < ROWS; y++) {
-        const sym = el('span.sym', {}, theme.syms[rndInt(6)]);
-        const cell = el('div.cellw', {}, sym);
-        cells[r][y] = { cell, sym };
-        col.append(cell);
+      const imgs = [];
+      const strip = el('div.strip');
+      for (let i = 0; i < STRIP; i++) {
+        const im = el('img.symi', {
+          src: sym(rndInt(8)), alt: '', loading: 'eager', decoding: 'async',
+          draggable: 'false',
+        });
+        imgs.push(im);
+        strip.append(el('div.cellw', {}, im));
       }
-      reelsWrap.append(col);
+      const window_ = el('div.reel', {}, strip);
+      cells[r] = [];
+      strips[r] = { strip, imgs };
+      reelsWrap.append(window_);
     }
 
-    const machine = el('div.slot-machine', {
-      style: { background: `linear-gradient(160deg, ${theme.bg}, #0b0d1c)` },
-    }, reelsWrap);
+    const machine = el('div.slot-machine', {},
+      el('div.cab-art', {
+        'aria-hidden': 'true',
+        style: { backgroundImage: `url("art/${theme.id}.webp")` },
+      }),
+      el('div.cab-top', { 'aria-hidden': 'true' }),
+      el('div.reel-window', {}, reelsWrap),
+      el('div.cab-bot', { 'aria-hidden': 'true' }));
 
     const banner = el('div.freespin-banner', { hidden: true });
     const msg = msgLine();
 
     const paytable = el('div.paytable', {},
-      theme.syms.map((s, i) => {
+      theme.syms.map((_, i) => {
         const pay = i === SCAT
           ? `${model.scatter[2]}x`
           : `${Math.round(model.pays[i][2] * model.calib)}x`;
-        return el('div.pt', {}, el('span', {}, s),
+        return el('div.pt', {},
+          el('img.pt-sym', { src: sym(i), alt: '', loading: 'lazy' }),
           i === WILD ? 'WILD' : i === SCAT ? 'SCAT' : '×5',
           el('b', {}, pay));
       }));
@@ -196,39 +215,67 @@ function mountSlot(theme) {
       onAction: () => doSpin(),
     });
 
+    /** Pixel height of one symbol cell, read from the live layout. */
+    const cellH = () => strips[0].strip.firstChild.getBoundingClientRect().height || 78;
+
+    /**
+     * Spin one reel: fill the strip with random symbols, drop the final ROWS
+     * into the landing slots, then translate from a long way up down to rest.
+     */
+    function spinReel(r, column) {
+      const { strip, imgs } = strips[r];
+      const h = cellH();
+      for (let i = 0; i < STRIP; i++) imgs[i].src = sym(rndInt(8));
+      // the last ROWS cells of the strip are what ends up in the window
+      for (let y = 0; y < ROWS; y++) imgs[STRIP - ROWS + y].src = sym(column[y]);
+
+      strip.style.transition = 'none';
+      strip.style.transform = `translateY(${-(STRIP - ROWS) * h}px)`;
+      void strip.offsetHeight;                       // flush before animating
+      strip.classList.add('spinning');
+      return h;
+    }
+
+    function landReel(r, dur) {
+      const { strip } = strips[r];
+      strip.style.transition = `transform ${dur}ms cubic-bezier(.16,.85,.3,1.06)`;
+      strip.style.transform = 'translateY(0px)';
+      strip.classList.remove('spinning');
+    }
+
     async function animateReveal(grid) {
-      for (let r = 0; r < REELS; r++) for (let y = 0; y < ROWS; y++) {
-        cells[r][y].cell.classList.add('spin');
-        cells[r][y].cell.classList.remove('hit');
-      }
-      const stopTick = ticker('reelTick', 80);
-      const churn = setInterval(() => {
-        for (let r = 0; r < REELS; r++) for (let y = 0; y < ROWS; y++)
-          if (cells[r][y].cell.classList.contains('spin'))
-            cells[r][y].sym.textContent = theme.syms[rndInt(8)];
-      }, 70);
+      clearHits();
+      const stopTick = ticker('reelTick', 70);
+
+      for (let r = 0; r < REELS; r++) spinReel(r, grid[r]);
+      await sleep(240);
 
       for (let r = 0; r < REELS; r++) {
-        await sleep(190);
-        for (let y = 0; y < ROWS; y++) {
-          const { cell, sym } = cells[r][y];
-          cell.classList.remove('spin');
-          sym.textContent = theme.syms[grid[r][y]];
-          cell.classList.remove('landed');
-          void cell.offsetWidth;            // restart the bounce
-          cell.classList.add('landed');
-          if (y === 0) play('reelStop');
-        }
+        landReel(r, 620);
+        play('reelStop');
+        await sleep(170);
       }
-      clearInterval(churn);
+      await sleep(480);
       stopTick();
     }
 
+    /* the visible window cells, for win highlighting */
+    function windowCell(r, y) {
+      return strips[r].strip.children[STRIP - ROWS + y];
+    }
+    function clearHits() {
+      for (let r = 0; r < REELS; r++)
+        for (const c of strips[r].strip.children) c.classList.remove('hit');
+    }
     function highlight(res) {
-      for (const w of res.wins) for (const [r, y] of w.cells) cells[r][y].cell.classList.add('hit');
-      if (res.scatters >= 3)
-        for (let r = 0; r < REELS; r++) for (let y = 0; y < ROWS; y++)
-          if (theme.syms[SCAT] === cells[r][y].sym.textContent) cells[r][y].cell.classList.add('hit');
+      for (const w of res.wins)
+        for (const [r, y] of w.cells) windowCell(r, y).classList.add('hit');
+      if (res.scatters >= 3) {
+        for (let r = 0; r < REELS; r++)
+          for (let y = 0; y < ROWS; y++)
+            if (windowCell(r, y).firstChild.src.endsWith(`/${SCAT}.webp`))
+              windowCell(r, y).classList.add('hit');
+      }
     }
 
     async function runSpin(bet, mult) {
@@ -263,11 +310,15 @@ function mountSlot(theme) {
         banner.textContent = `🎁 FREE SPINS COMPLETE  ·  +${fmt(total)}`;
       }
 
-      if (total > 0) {
+      if (total > bet) {
         wallet.pay(total);
         const x = total / bet;
         msg.win(total - bet, x >= 20 ? 'MEGA WIN' : x >= 8 ? 'BIG WIN' : 'WIN', bet);
         if (x >= 20) toast(`${theme.name}: ${x.toFixed(1)}× hit!`, 'win');
+      } else if (total > 0) {
+        // paid something back but less than the stake — say so, do not call it a win
+        wallet.pay(total);
+        msg.set(`Paid back $${fmt(total)} of your $${fmt(bet)} spin`, 'push');
       } else {
         msg.lose('No win — spin again');
       }

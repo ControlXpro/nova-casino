@@ -3,6 +3,7 @@
 import { el, clear, fmt, sleep, rndInt, shuffle, wallet, round2, toast } from '../core.js';
 import { betPanel, msgLine, rules, newShoe, draw, evalPoker, cmpPoker } from '../ui.js';
 import { feltTable, seat, spot, layCards } from '../felt.js';
+import { tableHud, shoeHistory } from '../players.js';
 import { play } from '../sound.js';
 
 const G = (o) => o;
@@ -92,7 +93,8 @@ function dragonTiger(root) {
   }
 
   choose('dragon');
-  root.append(table, histRow, msg.node, bp.node,
+  root.append(tableHud({ seats: 6, name: 'Dragon Tiger' }), shoeHistory(14, ['w','l','t','w','l']),
+    table, histRow, msg.node, bp.node,
     rules('DRAGON TIGER',
       `The fastest game on the floor: <b>one card to Dragon, one to Tiger</b>, higher card wins. Suits are ignored, aces are low.`,
       `Dragon and Tiger pay <code>1:1</code>. <b>Tie pays 8:1</b> — but on a tie, Dragon and Tiger bets lose half their stake.`,
@@ -176,7 +178,8 @@ function andarBahar(root) {
   }
 
   choose('andar');
-  root.append(table, msg.node, bp.node,
+  root.append(tableHud({ seats: 5, name: 'Andar Bahar' }), shoeHistory(12),
+    table, msg.node, bp.node,
     rules('ANDAR BAHAR',
       `A single <b>joker card</b> is turned. Cards are then dealt alternately to <b>Andar</b> and <b>Bahar</b> until one matches the joker's rank.`,
       `The side matching the joker's colour is dealt first, which is why it wins slightly more often — so <b>Andar pays 0.9:1</b> while <b>Bahar pays 1:1</b>.`,
@@ -267,7 +270,8 @@ function teenPatti(root) {
     phase = 'bet'; bp.unlock();
   }
 
-  root.append(table, row, msg.node, bp.node,
+  root.append(tableHud({ seats: 5, name: 'Teen Patti' }), shoeHistory(12),
+    table, row, msg.node, bp.node,
     rules('TEEN PATTI',
       `The Indian three-card game. Post the <b>boot</b>, see your cards, then match it to play on or fold.`,
       `Ranking: <code>Trail > Pure Sequence > Sequence > Colour > Pair > High Card</code> — note the trail (three of a kind) is the top hand, unlike three card poker.`,
@@ -375,7 +379,8 @@ function casinoHoldem(root) {
     phase = 'bet'; bp.unlock();
   }
 
-  root.append(table, row, msg.node, bp.node,
+  root.append(tableHud({ seats: 6, name: "Casino Hold'em" }), shoeHistory(12),
+    table, row, msg.node, bp.node,
     rules('CASINO HOLD’EM',
       `Ante, then you and the dealer each get two hole cards against a shared <b>flop</b>. Call for twice the ante to see the turn and river, or fold.`,
       `Best five cards out of seven wins. <b>Dealer qualifies with a pair of fours or better</b>; if not, the ante pays and the call bet pushes.`,
