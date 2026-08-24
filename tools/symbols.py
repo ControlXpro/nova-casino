@@ -101,8 +101,7 @@ def ink(cell: Image.Image) -> float:
     return sum(1 for v in g.getdata() if v >= DARK) / 1024
 
 
-def slice_sheet(theme: str, url: str) -> int:
-    img = fetch(url)
+def slice_image(theme: str, img: Image.Image) -> int:
     cols, rows = detect_grid(img)
     if len(cols) < 2 or len(rows) < 2:
         print(f"  {theme:<22} GRID NOT FOUND ({len(cols)}x{len(rows)})")
@@ -164,6 +163,10 @@ def main() -> None:
         except Exception as exc:
             print(f"  {theme:<22} FAILED: {exc}")
     print(f"total {total // 1024} KB across {len(sheets)} themes")
+
+
+def slice_sheet(theme: str, url: str) -> int:
+    return slice_image(theme, fetch(url))
 
 
 if __name__ == "__main__":

@@ -26,8 +26,8 @@ def fetch(url: str) -> Image.Image:
         return Image.open(BytesIO(r.read())).convert("RGB")
 
 
-def process(game_id: str, url: str) -> int:
-    img = fetch(url)
+def process_image(game_id: str, img: Image.Image) -> int:
+    """Same as process() but takes an already-fetched image."""
     # ids starting with "_" are page backgrounds, kept wide
     size = (1280, 720) if game_id.startswith("_") else SIZE
     # cover-crop so nothing is letterboxed
@@ -41,9 +41,14 @@ def process(game_id: str, url: str) -> int:
         img = img.crop((0, (h - new_h) // 2, w, (h + new_h) // 2))
 
     img = img.resize(size, Image.LANCZOS)
+    ART.mkdir(exist_ok=True)
     dest = ART / f"{game_id}.webp"
     img.save(dest, "WEBP", quality=QUALITY, method=6)
     return dest.stat().st_size
+
+
+def process(game_id: str, url: str) -> int:
+    return process_image(game_id, fetch(url))
 
 
 def main() -> None:

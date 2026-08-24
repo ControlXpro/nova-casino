@@ -64,7 +64,7 @@ onWallet(paintWallet);
 const SLIDES = [
   { kicker: 'Welcome', art: '🎰',
     bg: 'linear-gradient(100deg,#0b0f1aee,#0b0f1a66 55%,transparent), url("art/_hero.webp") center/cover',
-    h: ['Play ', '106 casino games', ' — for free.'],
+    h: ['Play ', '206 casino games', ' — for free.'],
     p: 'Slots, blackjack, roulette, crash, mines and more. Every balance is play credits: nothing here costs money, and nothing here pays money.',
     cta: 'Browse all games', go: 'all' },
   { kicker: 'Open source', art: '🎲', bg: 'linear-gradient(100deg,#0f2a1e,#2ee06a2e 60%,#0b0f1a)',

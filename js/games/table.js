@@ -244,8 +244,8 @@ function roulette({ id, order, american, laPartage = false, lightning = false })
 }
 
 /* ============================================================ SIC BO */
-function sicBo(root) {
-  const id = 'sic-bo';
+function sicBo({ id = 'sic-bo', label = 'SIC BO — THREE DICE' } = {}) {
+  return function mount(root) {
   let choice = 'big', busy = false;
   const cubes = el('div.cubes', {}, [0, 1, 2].map(() => el('div.cube', {}, '?')));
   const felt = el('div.dice-table', {}, cubes);
@@ -304,17 +304,18 @@ function sicBo(root) {
   }
 
   root.append(felt, totalOut, msg.node, el('div', { style: { marginTop: '14px' } }, picker), bp.node,
-    rules('SIC BO — THREE DICE',
+    rules(label,
       `Pick a wager, roll three dice. <b>Big</b> (11–17) and <b>Small</b> (4–10) pay 1:1 but lose to any triple.`,
       `<b>Single number</b> pays 1:1, 2:1 or 3:1 depending on how many dice show it.`,
       `<b>Specific triple</b> pays 180:1 · <b>any triple</b> 30:1 · totals pay on a ladder from 6:1 to 60:1.`,
       `House edge varies by bet from <code>2.8%</code> (big/small) to <code>~16%</code> (specific triple).`));
+  };
 }
 const SUM_PAY = { 4: 60, 5: 30, 6: 17, 7: 12, 8: 8, 9: 6, 10: 6, 11: 6, 12: 6, 13: 8, 14: 12, 15: 17, 16: 30, 17: 60 };
 
 /* ============================================================ CRAPS */
-function craps(root) {
-  const id = 'craps';
+function craps({ id = 'craps', label = 'CRAPS — LINE BETS' } = {}) {
+  return function mount(root) {
   let point = null, busy = false, lineStake = 0, sideChoice = 'pass';
   const cubes = el('div.cubes', {}, [0, 1].map(() => el('div.cube', {}, '?')));
   const felt = el('div.dice-table', {}, cubes);
@@ -392,14 +393,24 @@ function craps(root) {
 
   pointOut.textContent = 'come-out roll';
   root.append(felt, pointOut, msg.node, el('div', { style: { marginTop: '14px' } }, picker), bp.node,
-    rules('CRAPS — LINE BETS',
+    rules(label,
       `<b>Come-out roll:</b> 7 or 11 wins the pass line, 2/3/12 loses it. Anything else becomes the <b>point</b>.`,
       `Once a point is set, keep rolling: hitting the point wins, rolling a <code>7</code> loses. Your stake stays live — no extra credits are taken.`,
       `<b>Don't Pass</b> is the mirror bet; 12 is barred and pushes. <b>Field</b> is a single-roll bet: 3·4·9·10·11 pay 1:1, 2 pays 2:1, 12 pays 3:1.`,
       `House edge: pass <code>1.41%</code> · don't pass <code>1.36%</code> · field <code>2.78%</code>.`));
+  };
 }
 
 /* ============================================================ KENO */
+/* Cleopatra Keno: flatter mid-tiers, much fatter top end. */
+const CLEO_KENO_PAY = {
+  1: [0, 3], 2: [0, 0, 13], 3: [0, 0, 1, 44], 4: [0, 0, 1, 4, 110],
+  5: [0, 0, 0, 2, 18, 380], 6: [0, 0, 0, 1, 6, 60, 1000],
+  7: [0, 0, 0, 0, 2, 14, 130, 2000], 8: [0, 0, 0, 0, 1, 7, 50, 400, 5500],
+  9: [0, 0, 0, 0, 1, 4, 18, 130, 1100, 12000],
+  10: [0, 0, 0, 0, 0, 2, 12, 50, 280, 1500, 20000],
+};
+
 /* Power Keno trades the small consolation prizes for much steeper top ends. */
 const POWER_KENO_PAY = {
   1: [0, 3], 2: [0, 0, 14], 3: [0, 0, 1, 46], 4: [0, 0, 0, 5, 120],
@@ -601,10 +612,25 @@ export const tableGames = [
   G({ id: 'roulette-us', name: 'American Roulette', cat: 'table', icon: '🎡', art: 'linear-gradient(160deg,#1a2c4d,#0b0d1c)', rtp: 94.7, vol: 'Medium', mount: roulette({ id: 'roulette-us', order: US_ORDER, american: true }) }),
   G({ id: 'roulette-fr', name: 'French Roulette', cat: 'table', icon: '🎡', art: 'linear-gradient(160deg,#2a1240,#0b0d1c)', rtp: 98.6, vol: 'Medium', tags: ['new'], mount: roulette({ id: 'roulette-fr', order: EU_ORDER, american: false, laPartage: true }) }),
   G({ id: 'roulette-lightning', name: 'Lightning Roulette', cat: 'table', icon: '⚡', art: 'linear-gradient(160deg,#3d1250,#0b0d1c)', rtp: 97.1, vol: 'High', tags: ['hot'], mount: roulette({ id: 'roulette-lightning', order: EU_ORDER, american: false, lightning: true }) }),
+  G({ id: 'roulette-speed', name: 'Speed Roulette', cat: 'table', icon: '⚡', art: 'linear-gradient(160deg,#3d122a,#0b0d1c)', rtp: 97.3, vol: 'Medium', mount: roulette({ id: 'roulette-speed', order: EU_ORDER, american: false }) }),
+  G({ id: 'roulette-auto', name: 'Auto Roulette', cat: 'table', icon: '🎡', art: 'linear-gradient(160deg,#12303d,#0b0d1c)', rtp: 97.3, vol: 'Medium', mount: roulette({ id: 'roulette-auto', order: EU_ORDER, american: false }) }),
+  G({ id: 'roulette-lightning-x', name: 'Lightning Roulette X', cat: 'table', icon: '⚡', art: 'linear-gradient(160deg,#2a0f50,#0b0d1c)', rtp: 97.1, vol: 'High', tags: ['hot'], mount: roulette({ id: 'roulette-lightning-x', order: US_ORDER, american: true, lightning: true }) }),
+  G({ id: 'roulette-fr-gold', name: 'French Roulette Gold', cat: 'table', icon: '🇫🇷', art: 'linear-gradient(160deg,#3d2a12,#0b0d1c)', rtp: 98.6, vol: 'Medium', mount: roulette({ id: 'roulette-fr-gold', order: EU_ORDER, american: false, laPartage: true }) }),
+  G({ id: 'sic-bo-super', name: 'Super Sic Bo', cat: 'table', icon: '🎲', art: 'linear-gradient(160deg,#4d1a12,#0b0d1c)', rtp: 97.2, vol: 'High', mount: sicBo({ id: 'sic-bo' }) }),
+  G({ id: 'craps-express', name: 'Craps Express', cat: 'table', icon: '🎲', art: 'linear-gradient(160deg,#123d33,#0b0d1c)', rtp: 98.6, vol: 'Medium', mount: craps({ id: 'craps' }) }),
   G({ id: 'sic-bo', name: 'Sic Bo', cat: 'table', icon: '🎲', art: 'linear-gradient(160deg,#4d1230,#0b0d1c)', rtp: 97.2, vol: 'High', mount: sicBo }),
   G({ id: 'craps', name: 'Craps', cat: 'table', icon: '🎲', art: 'linear-gradient(160deg,#123d2a,#0b0d1c)', rtp: 98.6, vol: 'Medium', mount: craps }),
   G({ id: 'keno', name: 'Keno', cat: 'lottery', icon: '🔢', art: 'linear-gradient(160deg,#2a1d52,#0b0d1c)', rtp: 92.0, vol: 'High', mount: keno({ id: 'keno' }) }),
   G({ id: 'keno-power', name: 'Power Keno', cat: 'lottery', icon: '⚡', art: 'linear-gradient(160deg,#3d1d6b,#0b0d1c)', rtp: 91.0, vol: 'High', tags: ['new'], mount: keno({ id: 'keno-power', pay: POWER_KENO_PAY, label: 'POWER KENO' }) }),
   G({ id: 'bingo-75', name: 'Bingo 75', cat: 'lottery', icon: '🎱', art: 'linear-gradient(160deg,#4d3312,#0b0d1c)', rtp: 93.0, vol: 'Medium', mount: bingo({ id: 'bingo-75' }) }),
+  G({ id: 'roulette-vip', name: 'VIP Roulette', cat: 'table', icon: '💎', art: 'linear-gradient(160deg,#2a1240,#0b0d1c)', rtp: 97.3, vol: 'Medium', mount: roulette({ id: 'roulette-vip', order: EU_ORDER, american: false }) }),
+  G({ id: 'roulette-double-zero', name: 'Vegas Roulette', cat: 'table', icon: '🎡', art: 'linear-gradient(160deg,#3d1a12,#0b0d1c)', rtp: 94.7, vol: 'Medium', mount: roulette({ id: 'roulette-double-zero', order: US_ORDER, american: true }) }),
+  G({ id: 'sic-bo-lightning', name: 'Lightning Sic Bo', cat: 'table', icon: '⚡', art: 'linear-gradient(160deg,#2a1250,#0b0d1c)', rtp: 97.2, vol: 'High', mount: sicBo({ id: 'sic-bo-lightning', label: 'LIGHTNING SIC BO' }) }),
+  G({ id: 'craps-vegas', name: 'Vegas Craps', cat: 'table', icon: '🎲', art: 'linear-gradient(160deg,#1a3d24,#0b0d1c)', rtp: 98.6, vol: 'Medium', mount: craps({ id: 'craps-vegas', label: 'VEGAS CRAPS' }) }),
+  G({ id: 'keno-mega', name: 'Mega Keno', cat: 'lottery', icon: '🔢', art: 'linear-gradient(160deg,#3d1d52,#0b0d1c)', rtp: 91.0, vol: 'High', mount: keno({ id: 'keno-mega', pay: POWER_KENO_PAY, label: 'MEGA KENO' }) }),
+  G({ id: 'keno-cleo', name: 'Cleopatra Keno', cat: 'lottery', icon: '👸', art: 'linear-gradient(160deg,#4d3d12,#0b0d1c)', rtp: 91.5, vol: 'High', mount: keno({ id: 'keno-cleo', pay: CLEO_KENO_PAY, label: 'CLEOPATRA KENO' }) }),
+  G({ id: 'keno-classic', name: 'Classic Keno', cat: 'lottery', icon: '🔢', art: 'linear-gradient(160deg,#1d3352,#0b0d1c)', rtp: 92.0, vol: 'High', mount: keno({ id: 'keno-classic', label: 'CLASSIC KENO' }) }),
+  G({ id: 'bingo-30', name: 'Speed Bingo 30', cat: 'lottery', icon: '⚡', art: 'linear-gradient(160deg,#4d2a12,#0b0d1c)', rtp: 92.8, vol: 'High', mount: bingo({ id: 'bingo-30', max: 75, calls: 20, label: 'SPEED BINGO 30' }) }),
+  G({ id: 'bingo-80', name: 'Bingo 80', cat: 'lottery', icon: '🎱', art: 'linear-gradient(160deg,#123d3d,#0b0d1c)', rtp: 92.6, vol: 'Medium', mount: bingo({ id: 'bingo-80', max: 80, calls: 34, label: 'BINGO 80' }) }),
   G({ id: 'bingo-90', name: 'Bingo 90', cat: 'lottery', icon: '🎱', art: 'linear-gradient(160deg,#123d4d,#0b0d1c)', rtp: 92.5, vol: 'Medium', mount: bingo({ id: 'bingo-90', max: 90, calls: 40, label: 'BINGO 90' }) }),
 ];
