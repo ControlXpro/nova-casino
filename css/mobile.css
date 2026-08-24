@@ -1,0 +1,190 @@
+/* ═══════════════════════════════════════════════════════════
+   Mobile pass — loaded last so it wins.
+
+   Driven by an audit run at 320/375/414/768 (tools/audit.js):
+   the topbar overflowed the page below ~420px, 43 controls sat under the
+   44px touch minimum, and a lot of micro-labels fell under 11px.
+   ═══════════════════════════════════════════════════════════ */
+
+/* ── nothing may push the page sideways ── */
+html, body { max-width: 100%; overflow-x: clip; }
+
+/* Flex children default to min-width:auto, which stops them shrinking below
+   their content and is what forced the topbar wide. */
+.topbar > * { min-width: 0; }
+.search-wrap { min-width: 0; flex: 1 1 auto; }
+.userchip { flex: 0 1 auto; min-width: 0; }
+.uc-name { min-width: 0; }
+.bal { flex: 0 0 auto; }
+
+/* ── touch targets: only on coarse pointers, so desktop stays compact ── */
+@media (pointer: coarse), (max-width: 1023px) {
+  .btn { min-height: 44px; }
+  .btn-sm { min-height: 44px; padding-inline: 14px; }
+  .icon-btn { width: 44px; height: 44px; }
+  .bal-plus { width: 44px; height: 44px; }
+  /* icon-only buttons need a width floor too, not just a height one */
+  .btn-sm:not(:has(> :not(svg))) { min-width: 44px; }
+  .userchip .btn-sm { min-width: 44px; }
+  .brand { min-width: 44px; }
+  .cat-btn { min-height: 48px; }
+  #search { height: 44px; }
+  .brand { min-height: 44px; }
+  .tab { min-height: 48px; }
+  .chip-btn { min-height: 44px; }
+  .quick > button { min-height: 44px; }
+  .stepper { height: 46px; }
+  .opt { min-height: 50px; }
+  .auth-tab { min-height: 44px; }
+  .board-row { min-height: 44px; }
+  /* the dots stay visually 4px tall but carry a 44px tap area around them */
+  .promo-dots { gap: 0; }
+  .promo-dots button {
+    height: 44px; width: 40px; padding: 20px 9px; background: none;
+    position: relative;
+  }
+  .promo-dots button::after {
+    content: ""; position: absolute; inset: 20px 9px; border-radius: 99px;
+    background: var(--surface-3); transition: background .2s var(--ease);
+  }
+  .promo-dots button.on::after { background: var(--gold); }
+  /* footer + inline links get a real hit area */
+  .foot-links a, .gate-help a { display: inline-block; padding: 12px 4px; }
+  /* card tiles are already large; keep the felt spots thumb-sized */
+  button.felt-spot { min-width: 76px; min-height: 76px; }
+
+  /* found by the audit sweep: each of these sat 1-6px under the minimum */
+  /* both states, or the active dot keeps lobby.css's narrower width */
+  .promo-dots button, .promo-dots button.on { width: 44px; }
+  /* the halve / double buttons flanking the bet field */
+  .stepper button { min-width: 44px; }
+  .foot-links a, .gate-help a { padding: 14px 5px; }
+  .ob { min-height: 44px; }
+  .tw-door { height: 44px; }
+  .board-row { min-height: 46px; }
+
+  /* range inputs are 26px of hit area by default — give the whole strip one */
+  .slider-wrap { position: relative; padding-block: 26px 8px; }
+  .slider-wrap input[type=range] { height: 44px; margin-top: -29px; }
+  .slider-wrap input[type=range]::-webkit-slider-thumb { width: 30px; height: 30px; }
+  .slider-wrap input[type=range]::-moz-range-thumb { width: 30px; height: 30px; }
+}
+
+/* Keno packs 80 tiles. Ten 44px columns will not fit a phone, so drop to
+   eight columns and let the tiles grow instead of shrinking the tap area. */
+@media (max-width: 560px) {
+  /* seven columns is the most that still leaves each tile >= 44px wide
+     inside a 375px viewport once padding and gaps are taken out */
+  .tiles.keno-grid { grid-template-columns: repeat(7, 1fr) !important; width: 100%; gap: 4px; }
+  .tiles.keno-grid .tile.small { width: 100%; height: 44px; font-size: 12.5px; }
+}
+/* 320px phones cannot hold seven — the audit measured 36px tiles there */
+@media (max-width: 374px) {
+  .tiles.keno-grid { grid-template-columns: repeat(5, 1fr) !important; gap: 4px; }
+}
+
+/* ── legibility floor: nothing under 11px on a phone ── */
+@media (max-width: 1023px) {
+  .cat-btn .n,
+  .promo-kicker,
+  .ticker-tag,
+  .sec-head .count,
+  .card-meta,
+  .gv-sub span,
+  .panel-note,
+  .sim-tag,
+  .tv-blurb,
+  .pc-body,
+  .side-note,
+  .foot { font-size: 11px; }
+  .spot-label, .badge, .pm-badge, .bal-label { font-size: 11px; }
+  .bd-n, .bd-amt { font-size: 11px; }
+}
+
+/* ── topbar at phone widths ──────────────────────────────── */
+@media (max-width: 560px) {
+  .topbar { gap: 8px; padding: 0 10px; }
+  /* the account name is the least useful thing here; the icon carries it */
+  .uc-name span:not(:first-child) { display: none; }
+  .uc-name { max-width: 0; overflow: hidden; padding: 0; }
+  .bal { padding-left: 10px; }
+  .bal-amt, .bal-cur { font-size: 13px; }
+}
+@media (max-width: 430px) {
+  /* below this the search box and the balance cannot both fit, so search
+     collapses to an icon that expands the field over the bar when tapped */
+  .search-wrap {
+    position: absolute; left: 8px; right: 8px; top: 8px; z-index: 5;
+    max-width: none; display: none;
+  }
+  .topbar.searching .search-wrap { display: block; }
+  .topbar.searching > *:not(.search-wrap):not(#searchToggle) { visibility: hidden; }
+  #searchToggle { display: inline-grid; }
+  .topbar.searching #searchToggle { visibility: visible; margin-left: auto; }
+}
+@media (min-width: 431px) { #searchToggle { display: none; } }
+
+/* ── lobby density on small screens ── */
+@media (max-width: 430px) {
+  .grid { grid-template-columns: repeat(auto-fill, minmax(124px, 1fr)); gap: 8px; }
+  #main { padding: 12px 10px calc(var(--tabbar-h) + 20px); }
+  .panel { padding: 12px; }
+  .promo-slide { padding: 18px 14px; min-height: 150px; }
+  .tourney { padding: 14px; }
+  .two-col { gap: 10px; }
+}
+@media (max-width: 360px) {
+  .grid { grid-template-columns: repeat(2, 1fr); }
+}
+
+/* ── game view on small screens ── */
+@media (max-width: 560px) {
+  .gv-head { gap: 10px; }
+  .gv-ico { width: 44px; height: 44px; font-size: 22px; }
+  .gv-head h2 { font-size: 17px; }
+  .gv-back { padding: 10px 12px; }
+  .stage { padding: 12px; }
+  .betbar { gap: 8px; padding: 10px; }
+  .betbar .field { flex: 1 1 auto; }
+  .quick { flex-wrap: wrap; }
+  .rules { padding: 12px 14px; font-size: 12.5px; }
+}
+
+/* wide game content scrolls inside itself, never the page */
+.rt-board, .rt-outside, .tiles, .kn-drawn, .ab-run,
+.shoe-hist, .called, .paytable { max-width: 100%; }
+.rt-board, .rt-outside { overflow-x: auto; }
+
+/* the felt row of companion seats can get wide — let it scroll */
+@media (max-width: 1023px) {
+  .felt-row.bot-row { flex-wrap: nowrap; overflow-x: auto; justify-content: flex-start; }
+  .felt-row.bot-row::-webkit-scrollbar { height: 0; }
+}
+
+/* ── landscape phones: the tab bar eats too much height ── */
+@media (max-height: 480px) and (orientation: landscape) {
+  .tabbar { display: none; }
+  #main { padding-bottom: 24px; }
+  .foot { padding-bottom: 20px; }
+  .pk-pitch { max-height: 70vh; }
+}
+
+/* ── iOS niceties ── */
+@media (pointer: coarse), (max-width: 1023px) {
+  .btn, .opt, .tile, .chip-btn, .card, .tab, .cat-btn, .pk-zone, .tw-door, .rn, .ob {
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+  }
+  /* momentum scrolling inside the horizontal rails */
+  .promo, .chips, .kn-drawn, .ab-run, .rt-board, .felt-row.bot-row {
+    -webkit-overflow-scrolling: touch;
+  }
+}
+
+/* ── last of the sub-11px labels the 320px audit turned up ── */
+@media (max-width: 1023px) {
+  /* the tab bar is the primary navigation; 10px is too small to scan */
+  .tab { font-size: 11px; }
+  .panel-tag { font-size: 11px; }
+  .tv-pool span { font-size: 11px; }
+}

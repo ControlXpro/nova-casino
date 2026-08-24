@@ -430,7 +430,7 @@ function keno({ id, pay = KENO_PAY, label = 'KENO' }) {
   return function mount(root) {
   const picks = new Set();
   let busy = false;
-  const grid = el('div.tiles', { style: { gridTemplateColumns: 'repeat(10, auto)' } });
+  const grid = el('div.tiles.keno-grid', { style: { gridTemplateColumns: 'repeat(10, auto)' } });
   const tiles = [];
   for (let n = 1; n <= 80; n++) {
     const t = el('button.tile.small', { type: 'button' }, String(n));

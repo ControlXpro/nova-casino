@@ -6,12 +6,14 @@ import { installRipple } from './fx.js';
 import { sound, play } from './sound.js';
 import { dailyBonusCard, promoCards, tournaments, bigWinBoard } from './lobby-sections.js';
 import { slotGames } from './games/slots.js';
+import { instant200 } from './games/instant200.js';
 import { cardGames } from './games/cards.js';
 import { tableGames } from './games/table.js';
 import { instantGames } from './games/instant.js';
 import { moreGames } from './games/more.js';
 
-const GAMES = [...instantGames, ...moreGames, ...cardGames, ...tableGames, ...slotGames];
+const GAMES = [...instantGames, ...moreGames, ...cardGames, ...tableGames,
+  ...instant200, ...slotGames];
 const byId = new Map(GAMES.map((g) => [g.id, g]));
 
 /* ── icons ──────────────────────────────────────────────────
@@ -64,7 +66,7 @@ onWallet(paintWallet);
 const SLIDES = [
   { kicker: 'Welcome', art: '🎰',
     bg: 'linear-gradient(100deg,#0b0f1aee,#0b0f1a66 55%,transparent), url("art/_hero.webp") center/cover',
-    h: ['Play ', '206 casino games', ' — for free.'],
+    h: ['Play ', '406 casino games', ' — for free.'],
     p: 'Slots, blackjack, roulette, crash, mines and more. Every balance is play credits: nothing here costs money, and nothing here pays money.',
     cta: 'Browse all games', go: 'all' },
   { kicker: 'Open source', art: '🎲', bg: 'linear-gradient(100deg,#0f2a1e,#2ee06a2e 60%,#0b0f1a)',
@@ -250,8 +252,14 @@ function renderGame(id) {
   view.hidden = false;
 
   const t = themeFor(g);
-  const stage = el('div.stage.motif-' + t.motif, {
-    style: { '--accent': t.accent, '--stage-bg': t.bg },
+  /* Every game gets its own backdrop art behind the stage, not just a gradient.
+     A missing file simply falls back to the gradient — the layer is decorative. */
+  const stage = el('div.stage.motif-' + t.motif + '.has-art', {
+    style: {
+      '--accent': t.accent,
+      '--stage-bg': t.bg,
+      '--stage-art': `url("art/scene/${g.id}.webp")`,
+    },
   }, el('div.stage-emblem', { 'aria-hidden': 'true' }, t.emblem));
 
   const back = el('a.btn.btn-ghost.gv-back', { href: '#/lobby' }, ico('back'), 'Lobby');
@@ -436,6 +444,18 @@ function boot() {
     if (location.hash.startsWith('#/game/')) location.hash = '#/lobby';
     else renderLobby();
   });
+  /* On narrow phones the search field collapses to an icon; tapping it takes
+     over the bar so the field gets full width instead of squeezing it. */
+  const bar = $('.topbar'), sTog = $('#searchToggle'), sInput = $('#search');
+  const setSearching = (on) => {
+    bar.classList.toggle('searching', on);
+    sTog.setAttribute('aria-expanded', on ? 'true' : 'false');
+    if (on) sInput.focus();
+  };
+  sTog.addEventListener('click', () => setSearching(!bar.classList.contains('searching')));
+  sInput.addEventListener('blur', () => { if (!sInput.value) setSearching(false); });
+  addEventListener('keydown', (e) => { if (e.key === 'Escape') setSearching(false); });
+
   $('#navToggle').addEventListener('click', () =>
     ($('#sidebar').classList.contains('open') ? closeNav() : openNav()));
   $('#scrim').addEventListener('click', closeNav);

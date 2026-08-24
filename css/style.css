@@ -326,8 +326,15 @@ svg.filled{fill:currentColor;stroke:none}
 .gv-sub .rtp{color:var(--win)}
 .gv-back{margin-left:auto}
 
-.stage{background:var(--surface);border:1px solid var(--line);border-radius:var(--r-lg);
+.stage{position:relative;isolation:isolate;overflow:hidden;
+  background:var(--surface);border:1px solid var(--line);border-radius:var(--r-lg);
   padding:var(--s5);box-shadow:var(--shadow)}
+/* the game's own key art, dropped well back so play pieces stay readable */
+.stage.has-art::before{content:"";position:absolute;inset:0;z-index:-2;
+  background-image:var(--stage-art);background-size:cover;background-position:center;
+  opacity:.3}
+.stage.has-art::after{content:"";position:absolute;inset:0;z-index:-1;
+  background:var(--stage-bg),linear-gradient(180deg,rgba(11,15,26,.72),rgba(11,15,26,.92))}
 .rules{margin-top:var(--s4);background:var(--surface);border:1px solid var(--line-soft);
   border-radius:var(--r);padding:var(--s4) var(--s5);font-size:13px;color:var(--dim);line-height:1.65}
 .rules h4{font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--gold);

@@ -1,3 +1,4 @@
+import { instant200Themes } from './games/instant200.js';
 /* Per-game visual identity.
    Each game gets its own stage background, accent colour and decorative motif,
    so no two games look alike. Applied to `.stage` as CSS custom properties in
@@ -70,7 +71,7 @@ const SLOT_ACCENTS = {
 const SLOT_MOTIFS = ['rays', 'dots', 'diag', 'shine', 'grid'];
 
 export function themeFor(game) {
-  const t = GAME_THEMES[game.id];
+  const t = GAME_THEMES[game.id] || instant200Themes[game.id];
   if (t) return t;
   if (game.cat === 'slots') {
     const accent = SLOT_ACCENTS[game.id] || '#ffc531';
