@@ -240,7 +240,8 @@ function plinko({ id = 'plinko', risk = 'medium' }) {
   const PLINKO_PAY = PLINKO_PAYS[risk];
   let busy = false;
   const canvas = el('canvas');
-  const box = el('div.plinko-box', {}, canvas);
+  const orb = el('div.pl-orb', { 'aria-hidden': 'true' });
+  const box = el('div.plinko-box.scene', {}, canvas, orb);
   const buckets = el('div.buckets', {}, PLINKO_PAY.map((m) =>
     el('div.bk', { style: { color: m >= 10 ? '#f5c451' : m >= 1 ? '#eef1ff' : '#8d93b8' } }, m + '×')));
   const msg = msgLine();
@@ -255,16 +256,34 @@ function plinko({ id = 'plinko', risk = 'medium' }) {
     }
     return out;
   }
+  /* Pegs are drawn as lit chrome studs; the ball itself is a DOM sprite so it
+     can carry a real glow and trail. `hitRow` flashes the row just struck. */
+  let hitRow = -1;
   function render(ball) {
     const ctx = canvas.getContext('2d');
     const w = canvas.width = canvas.clientWidth * devicePixelRatio;
     const h = canvas.height = canvas.clientHeight * devicePixelRatio;
     ctx.clearRect(0, 0, w, h);
-    ctx.fillStyle = '#3a4070';
-    for (const p of pegs(w, h)) { ctx.beginPath(); ctx.arc(p.x, p.y, 2.4 * devicePixelRatio, 0, 7); ctx.fill(); }
+
+    const R = 3.2 * devicePixelRatio;
+    let row = 0, seen = 0, n = 3;
+    for (const p of pegs(w, h)) {
+      const lit = row === hitRow;
+      const g = ctx.createRadialGradient(p.x - R * .4, p.y - R * .4, R * .15, p.x, p.y, R * 1.6);
+      g.addColorStop(0, lit ? '#fff8e0' : '#e8edff');
+      g.addColorStop(.55, lit ? '#ffc531' : '#8c97c4');
+      g.addColorStop(1, lit ? 'rgba(255,197,49,.15)' : 'rgba(60,70,110,.25)');
+      ctx.fillStyle = g;
+      ctx.beginPath(); ctx.arc(p.x, p.y, lit ? R * 1.35 : R, 0, 7); ctx.fill();
+      if (++seen >= n) { seen = 0; n++; row++; }
+    }
+
     if (ball) {
-      ctx.fillStyle = '#f5c451';
-      ctx.beginPath(); ctx.arc(ball.x, ball.y, 6 * devicePixelRatio, 0, 7); ctx.fill();
+      orb.style.opacity = '1';
+      orb.style.left = (ball.x / devicePixelRatio) + 'px';
+      orb.style.top = (ball.y / devicePixelRatio) + 'px';
+    } else {
+      orb.style.opacity = '0';
     }
   }
   async function drop() {
@@ -289,8 +308,12 @@ function plinko({ id = 'plinko', risk = 'medium' }) {
         render({ x, y }); await sleep(16);
       }
       x = tx; y = ty;
+      hitRow = r; render({ x, y }); play('tickUp');
     }
+    hitRow = -1;
     render({ x, y: h - 22 });
+    await sleep(120);
+    render(null);
 
     const mult = PLINKO_PAY[slot];
     buckets.children[slot].classList.add('flash'); play('coin');
@@ -318,6 +341,7 @@ function diceGame(root) {
   const id = 'dice';
   let target = 50, over = true, busy = false;
   const resultEl = el('div.dice-result', {}, '—');
+  const feltBg = el('div.dice-felt', { 'aria-hidden': 'true' });
   const rail = el('div.slider-rail');
   const range = el('input', { type: 'range', min: 2, max: 98, value: 50, step: 1 });
   const scale = el('div.scale', {}, ['0', '25', '50', '75', '100'].map((s) => el('span', {}, s)));
@@ -363,7 +387,8 @@ function diceGame(root) {
   }
 
   sync();
-  root.append(resultEl, el('div.slider-wrap', {}, rail, range, scale), stats, msg.node, bp.node,
+  root.append(el('div.dice-scene', {}, feltBg, resultEl),
+    el('div.slider-wrap', {}, rail, range, scale), stats, msg.node, bp.node,
     rules('DICE',
       `A number from <code>0.00</code> to <code>100.00</code> is rolled. Set your threshold and pick a side.`,
       `The payout is always <code>99 ÷ win chance</code>, so a 2% shot pays <code>49.5×</code> and a 95% shot pays <code>1.04×</code>.`,
@@ -375,14 +400,21 @@ function diceGame(root) {
 function limbo(root) {
   const id = 'limbo';
   let busy = false;
-  const resultEl = el('div.dice-result', {}, '—');
+  const resultEl = el('div.lb-value', {}, '—');
+  const bar = el('div.lb-bar', { 'aria-hidden': 'true' });
+  const marker = el('div.lb-target', { 'aria-hidden': 'true' });
+  const sky = el('div.lb-scene', {}, bar, marker, resultEl);
   const msg = msgLine();
   const stats = el('div.readout');
   const targetInput = el('input', { type: 'text', inputmode: 'decimal', value: '2.00' });
   const target = () => Math.min(1000000, Math.max(1.01, parseFloat(targetInput.value) || 2));
+  /* Height on the gauge is logarithmic — 1x sits at the floor, 100x near the top. */
+  const heightFor = (m) => Math.max(0, Math.min(100, Math.log(Math.max(1, m)) / Math.log(100) * 100));
   const sync = () => {
     targetInput.value = target().toFixed(2);
     stats.innerHTML = `win chance <b>${(EDGE / target() * 100).toFixed(4)}%</b> · pays <b>${target().toFixed(2)}×</b>`;
+    marker.style.bottom = heightFor(target()) + '%';
+    marker.dataset.v = target().toFixed(2) + 'x';
   };
   targetInput.addEventListener('change', sync);
   const bump = (f) => { targetInput.value = (target() * f).toFixed(2); sync(); };
@@ -399,10 +431,20 @@ function limbo(root) {
     const stake = bp.value, t = target();
     if (!bp.take()) return;
     busy = true; bp.lock();
-    for (let i = 0; i < 10; i++) { resultEl.textContent = fmtx(1 + rnd() * 5); await sleep(45); }
+    bar.classList.add('rising');
+    for (let i = 0; i < 10; i++) {
+      const step = 1 + rnd() * 5;
+      resultEl.textContent = fmtx(step);
+      bar.style.height = heightFor(step) + '%';
+      await sleep(45);
+    }
     const r = Math.max(1, Math.floor(100 * EDGE / (1 - rnd())) / 100);
     resultEl.textContent = fmtx(r);
+    bar.style.height = heightFor(r) + '%';
+    bar.classList.remove('rising');
     const won = r >= t;
+    bar.classList.toggle('won', won);
+    bar.classList.toggle('lost', !won);
     resultEl.style.color = won ? 'var(--win)' : 'var(--lose)';
     const pay = won ? round2(stake * t) : 0;
     if (pay) { wallet.pay(pay); msg.win(pay - stake, `${fmtx(r)} cleared ${fmtx(t)} ·`, stake); }
@@ -412,7 +454,7 @@ function limbo(root) {
   }
 
   sync();
-  root.append(resultEl, stats, msg.node, bp.node,
+  root.append(sky, stats, msg.node, bp.node,
     rules('LIMBO',
       `Set a target multiplier. A random multiplier is generated — if it lands at or above your target, you win that multiple.`,
       `The result is drawn from <code>0.99 ÷ (1 − r)</code>, the same curve that drives Crash, but resolved instantly.`,
@@ -524,7 +566,7 @@ function scratch({ id }) {
   const CFG = SC_CARDS[id];
   return function mount(root) {
   let busy = false, layout = [], revealed = 0, prize = 0, winSym = null, currentStake = 0;
-  const grid = el('div.scratch-grid');
+  const grid = el('div.scratch-grid.foil');
   const msg = msgLine();
   const cellEls = [];
   for (let i = 0; i < 9; i++) {
@@ -602,7 +644,8 @@ function tower(root) {
   const id = 'tower';
   const LEVELS = 8;
   let live = false, stake = 0, level = 0, safeIdx = [];
-  const grid = el('div.tiles', { style: { gridTemplateColumns: 'repeat(3, auto)' } });
+  const grid = el('div.tw-grid');
+  const scene = el('div.tw-scene', {}, el('div.tw-prize', { 'aria-hidden': 'true' }), grid);
   const rows = [];
   const msg = msgLine();
   const info = el('div.readout');
@@ -614,17 +657,21 @@ function tower(root) {
 
   for (let r = LEVELS - 1; r >= 0; r--) {
     const row = [];
+    const rowEl = el('div.tw-row');
     for (let c = 0; c < 3; c++) {
-      const t = el('button.tile', { type: 'button' }, '');
+      const t = el('button.tw-door', { type: 'button', 'aria-label': `Level ${r + 1}, door ${c + 1}` });
       t.addEventListener('click', () => step(r, c));
-      row[c] = t; grid.append(t);
+      row[c] = t; rowEl.append(t);
     }
     rows[r] = row;
+    grid.append(rowEl);
   }
   function paint() {
     rows.forEach((row, r) => row.forEach((t) => {
       t.classList.toggle('dim', live && r !== level);
+      t.classList.toggle('now', live && r === level);
     }));
+    scene.style.setProperty('--climb', live ? Math.min(level, LEVELS) : 0);
     info.textContent = live
       ? `level ${level + 1}/${LEVELS} · banked ${fmtx(multAt(level))} · next ${fmtx(multAt(level + 1))}`
       : `Each level: 2 of 3 doors are safe · ${fmtx(multAt(1))} per step, up to ${fmtx(multAt(LEVELS))}`;
@@ -634,7 +681,7 @@ function tower(root) {
     if (live) return;
     stake = bp.value;
     if (!bp.take()) return;
-    rows.forEach((row) => row.forEach((t) => { t.className = 'tile'; t.textContent = ''; }));
+    rows.forEach((row) => row.forEach((t) => { t.className = 'tw-door'; }));
     safeIdx = Array.from({ length: LEVELS }, () => rndInt(3));   // index of the BOMB
     level = 0; live = true; bp.lock(); btnOut.hidden = false;
     msg.set('Pick a door on the bottom row', 'push'); paint();
@@ -642,12 +689,12 @@ function tower(root) {
   function step(r, c) {
     if (!live || r !== level) return;
     if (c === safeIdx[r]) {
-      rows[r].forEach((t, i) => { t.className = 'tile done ' + (i === safeIdx[r] ? 'bomb' : 'gem'); t.textContent = i === safeIdx[r] ? '💀' : '🪜'; });
+      rows[r].forEach((t, i) => { t.className = 'tw-door done ' + (i === safeIdx[r] ? 'trap' : 'safe'); });
       msg.lose(`Trapdoor on level ${r + 1}`);
       wallet.logResult(id, stake, 0);
       return end();
     }
-    rows[r][c].className = 'tile gem done'; rows[r][c].textContent = '🪜'; play('gem');
+    rows[r][c].className = 'tw-door safe done'; play('gem');
     level++;
     if (level >= LEVELS) return cashOut();
     msg.set(`Level ${level} cleared — ${fmtx(multAt(level))}`, 'win');
@@ -663,12 +710,12 @@ function tower(root) {
   }
   function end() {
     live = false; btnOut.hidden = true; bp.unlock();
-    rows.forEach((row) => row.forEach((t) => t.classList.remove('dim')));
+    rows.forEach((row) => row.forEach((t) => t.classList.remove('dim', 'now')));
     paint();
   }
 
   paint();
-  root.append(grid, info, msg.node,
+  root.append(scene, info, msg.node,
     el('div', { style: { display: 'flex', gap: '10px', alignItems: 'flex-end', flexWrap: 'wrap' } }, bp.node, btnOut),
     rules('TOWER',
       `Climb eight levels. Each level has three doors — <b>two are safe, one is a trapdoor</b>.`,

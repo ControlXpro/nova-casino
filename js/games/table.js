@@ -248,6 +248,7 @@ function sicBo(root) {
   const id = 'sic-bo';
   let choice = 'big', busy = false;
   const cubes = el('div.cubes', {}, [0, 1, 2].map(() => el('div.cube', {}, '?')));
+  const felt = el('div.dice-table', {}, cubes);
   const msg = msgLine();
   const totalOut = el('div.readout');
 
@@ -302,7 +303,7 @@ function sicBo(root) {
     busy = false; bp.unlock();
   }
 
-  root.append(cubes, totalOut, msg.node, el('div', { style: { marginTop: '14px' } }, picker), bp.node,
+  root.append(felt, totalOut, msg.node, el('div', { style: { marginTop: '14px' } }, picker), bp.node,
     rules('SIC BO — THREE DICE',
       `Pick a wager, roll three dice. <b>Big</b> (11–17) and <b>Small</b> (4–10) pay 1:1 but lose to any triple.`,
       `<b>Single number</b> pays 1:1, 2:1 or 3:1 depending on how many dice show it.`,
@@ -316,6 +317,7 @@ function craps(root) {
   const id = 'craps';
   let point = null, busy = false, lineStake = 0, sideChoice = 'pass';
   const cubes = el('div.cubes', {}, [0, 1].map(() => el('div.cube', {}, '?')));
+  const felt = el('div.dice-table', {}, cubes);
   const msg = msgLine();
   const pointOut = el('div.readout');
   const picker = optGrid([
@@ -389,7 +391,7 @@ function craps(root) {
   }
 
   pointOut.textContent = 'come-out roll';
-  root.append(cubes, pointOut, msg.node, el('div', { style: { marginTop: '14px' } }, picker), bp.node,
+  root.append(felt, pointOut, msg.node, el('div', { style: { marginTop: '14px' } }, picker), bp.node,
     rules('CRAPS — LINE BETS',
       `<b>Come-out roll:</b> 7 or 11 wins the pass line, 2/3/12 loses it. Anything else becomes the <b>point</b>.`,
       `Once a point is set, keep rolling: hitting the point wins, rolling a <code>7</code> loses. Your stake stays live — no extra credits are taken.`,
@@ -433,6 +435,9 @@ function keno({ id, pay = KENO_PAY, label = 'KENO' }) {
   const msg = msgLine();
   const out = el('div.readout');
   const payRow = el('div.paytable');
+  const drum = el('div.kn-drum', { 'aria-hidden': 'true' });
+  const drawnRow = el('div.kn-drawn');
+  const machine = el('div.kn-machine', {}, drum, drawnRow);
   const bp = betPanel({
     start: 10, min: 1, max: 1000, action: 'DRAW', onAction: play,
     extra: [el('div.field', {}, el('label', {}, 'PICKS'), el('div.quick', {},
@@ -473,14 +478,20 @@ function keno({ id, pay = KENO_PAY, label = 'KENO' }) {
     busy = true; bp.lock(); msg.clear();
     tiles.forEach((t) => t && t.classList.remove('hit', 'dim'));
 
+    clear(drawnRow);
+    drum.classList.add('spinning');
     const drawn = shuffle([...Array(80)].map((_, i) => i + 1)).slice(0, 20);
     let hits = 0;
     for (const n of drawn) {
-      tiles[n].classList.add(picks.has(n) ? 'hit' : 'dim');
-      if (picks.has(n)) play('gem');
-      if (picks.has(n)) hits++;
-      await sleep(55);
+      const hit = picks.has(n);
+      tiles[n].classList.add(hit ? 'hit' : 'dim');
+      if (hit) { hits++; play('gem'); } else play('tickUp');
+      drawnRow.append(el('div.kn-ball' + (hit ? '.hit' : ''), {}, String(n)));
+      drawnRow.scrollLeft = drawnRow.scrollWidth;
+      await sleep(110);
     }
+    drum.classList.remove('spinning');
+
     const mult = pay[picks.size][hits] || 0;
     const payout = round2(stake * mult);
     if (payout > stake) { wallet.pay(payout); msg.win(payout - stake, `${hits}/${picks.size} hits — ${mult}× ·`, stake); }
@@ -491,7 +502,7 @@ function keno({ id, pay = KENO_PAY, label = 'KENO' }) {
   }
 
   info();
-  root.append(grid, out, msg.node, bp.node, payRow,
+  root.append(machine, grid, out, msg.node, bp.node, payRow,
     rules(label,
       `Pick <b>1 to 10</b> numbers from 80, then 20 are drawn. The more you pick, the steeper the ladder.`,
       `Green tiles are your hits, dim tiles are drawn numbers you missed. The paytable below updates with your selection.`,
@@ -506,6 +517,8 @@ function bingo({ id, max = 75, calls = 30, label = 'BINGO 75' }) {
   let busy = false, card = [], marks = [];
   const cardWrap = el('div.bingo-card');
   const calledRow = el('div.called');
+  const cage = el('div.bg-cage', { 'aria-hidden': 'true' });
+  const hall = el('div.bg-hall', {}, cage);
   const msg = msgLine();
   const bp = betPanel({ start: 25, min: 1, max: 1000, action: 'BUY CARD & PLAY', onAction: play });
 
@@ -547,16 +560,18 @@ function bingo({ id, max = 75, calls = 30, label = 'BINGO 75' }) {
     newCard(); clear(calledRow);
 
     const balls = shuffle([...Array(max)].map((_, i) => i + 1)).slice(0, calls);
+    cage.classList.add('spinning');
     for (const b of balls) {
       const col = Math.floor((b - 1) / (max / 5));
       const row = card[col].indexOf(b);
       if (row >= 0) marks[col][row] = true;
       [...calledRow.children].forEach((n) => n.classList.remove('new'));
-      calledRow.append(el('div.cball.new', {}, String(b)));
+      calledRow.append(el('div.cball.lotto.new', {}, String(b)));
       play('tickUp');
       paint();
       await sleep(90);
     }
+    cage.classList.remove('spinning');
     const s = score();
     let mult = 0, note = `No pattern in ${calls} balls`;
     if (s.full) { mult = 60; note = 'FULL HOUSE!'; }
@@ -571,7 +586,7 @@ function bingo({ id, max = 75, calls = 30, label = 'BINGO 75' }) {
   }
 
   newCard();
-  root.append(cardWrap, calledRow, msg.node, bp.node,
+  root.append(hall, cardWrap, calledRow, msg.node, bp.node,
     rules(label,
       `You buy one 5×5 card with a free centre star. <b>${calls} of ${max} balls</b> are called.`,
       `Pays: any single line (row, column or diagonal) <code>2×</code> · four corners <code>3×</code> · two or more lines <code>6×</code> · full house <code>60×</code>.`,
