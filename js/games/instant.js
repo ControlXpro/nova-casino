@@ -49,7 +49,7 @@ function crash(root) {
       el('button', { type: 'button', onclick: () => bump(0.1) }, '+')));
   const bump = (d) => { autoInput.value = Math.max(1.01, (parseFloat(autoInput.value) || 2) + d).toFixed(2); };
 
-  const bp = betPanel({ start: 25, min: 1, max: 2000, action: 'BET', onAction: go, extra: [auto] });
+  const bp = betPanel({ start: 25, min: 1, action: 'BET', onAction: go, extra: [auto] });
 
   function rollCrash() {
     if (rnd() < 0.01) return 1.00;                 // 1% instant bust = the house edge
@@ -164,7 +164,7 @@ function mines(root) {
   const countSel = optGrid([1, 3, 5, 10, 24].map((n) => ({ key: String(n), label: `${n} 💣`, sub: n === 24 ? '24.75×' : '' })),
     (k) => { if (!live) { bombs = +k; info(); } });
 
-  const bp = betPanel({ start: 25, min: 1, max: 2000, action: 'START', onAction: go });
+  const bp = betPanel({ start: 25, min: 1, action: 'START', onAction: go });
   const btnOut = el('button.btn.btn-gold.btn-lg', { type: 'button', onclick: cashOut }, 'CASH OUT');
   btnOut.hidden = true;
 
@@ -245,7 +245,7 @@ function plinko({ id = 'plinko', risk = 'medium' }) {
   const buckets = el('div.buckets', {}, PLINKO_PAY.map((m) =>
     el('div.bk', { style: { color: m >= 10 ? '#f5c451' : m >= 1 ? '#eef1ff' : '#8d93b8' } }, m + '×')));
   const msg = msgLine();
-  const bp = betPanel({ start: 25, min: 1, max: 1000, action: 'DROP', onAction: drop });
+  const bp = betPanel({ start: 25, min: 1, action: 'DROP', onAction: drop });
 
   function pegs(w, h) {
     const out = [];
@@ -350,7 +350,7 @@ function diceGame(root) {
 
   const dirBtn = el('button.btn', { type: 'button', onclick: () => { over = !over; sync(); } }, 'ROLL OVER');
   const bp = betPanel({
-    start: 25, min: 1, max: 2000, action: 'ROLL', onAction: roll,
+    start: 25, min: 1, action: 'ROLL', onAction: roll,
     extra: [el('div.field', {}, el('label', {}, 'DIRECTION'), dirBtn)],
   });
 
@@ -420,7 +420,7 @@ function limbo(root) {
   const bump = (f) => { targetInput.value = (target() * f).toFixed(2); sync(); };
 
   const bp = betPanel({
-    start: 25, min: 1, max: 2000, action: 'PLAY', onAction: play,
+    start: 25, min: 1, action: 'PLAY', onAction: play,
     extra: [el('div.field', {}, el('label', {}, 'TARGET MULTIPLIER'),
       el('div.stepper', {}, el('button', { type: 'button', onclick: () => bump(0.5) }, '½'),
         targetInput, el('button', { type: 'button', onclick: () => bump(2) }, '2×')))],
@@ -480,7 +480,7 @@ function wheelGame(root) {
         el('span', { style: { width: '14px', height: '14px', borderRadius: '4px', background: m === 0 ? '#2b2f52' : m >= 2 ? '#f5c451' : m >= 1.5 ? '#7b5bff' : '#3ddc84' } }),
         `${WHEEL_SEG.filter((x) => x === m).length}/12`, el('b', {}, m + '×'))));
   const msg = msgLine();
-  const bp = betPanel({ start: 25, min: 1, max: 2000, action: 'SPIN', onAction: spin });
+  const bp = betPanel({ start: 25, min: 1, action: 'SPIN', onAction: spin });
 
   async function spin() {
     if (busy) return;
@@ -519,7 +519,7 @@ function coinFlip(root) {
     { key: 'heads', label: '👑 HEADS', sub: '1.98×' },
     { key: 'tails', label: '🦅 TAILS', sub: '1.98×' },
   ], (k) => { side = k; });
-  const bp = betPanel({ start: 25, min: 1, max: 5000, action: 'FLIP', onAction: flip });
+  const bp = betPanel({ start: 25, min: 1, action: 'FLIP', onAction: flip });
 
   async function flip() {
     if (busy) return;
@@ -586,7 +586,7 @@ function scratch({ id }) {
     c.addEventListener('click', () => reveal(i));
     cellEls.push(c); grid.append(c);
   }
-  const bp = betPanel({ start: 10, min: 1, max: 500, action: 'BUY CARD', onAction: buy });
+  const bp = betPanel({ start: 10, min: 1, action: 'BUY CARD', onAction: buy });
   const btnAll = el('button.btn', { type: 'button', onclick: revealAll }, 'REVEAL ALL');
   btnAll.hidden = true;
 
@@ -661,7 +661,7 @@ function tower(root) {
   const rows = [];
   const msg = msgLine();
   const info = el('div.readout');
-  const bp = betPanel({ start: 25, min: 1, max: 2000, action: 'START CLIMB', onAction: go });
+  const bp = betPanel({ start: 25, min: 1, action: 'START CLIMB', onAction: go });
   const btnOut = el('button.btn.btn-gold.btn-lg', { type: 'button', onclick: cashOut }, 'CASH OUT');
   btnOut.hidden = true;
 
@@ -747,7 +747,7 @@ function rps(root) {
   const msg = msgLine();
   let choice = 'rock';
   const picker = optGrid(MOVES.map((m) => ({ key: m.k, label: `${m.e} ${m.k.toUpperCase()}`, sub: 'win 1.94×' })), (k) => { choice = k; });
-  const bp = betPanel({ start: 25, min: 1, max: 2000, action: 'THROW', onAction: play });
+  const bp = betPanel({ start: 25, min: 1, action: 'THROW', onAction: play });
 
   async function play() {
     if (busy) return;

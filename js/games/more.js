@@ -32,7 +32,7 @@ function dragonTiger(root) {
 
   const histRow = el('div.history');
   const msg = msgLine();
-  const bp = betPanel({ start: 25, min: 1, max: 2000, action: 'DEAL', onAction: deal });
+  const bp = betPanel({ start: 25, min: 1, action: 'DEAL', onAction: deal });
 
   function choose(k) {
     if (busy) return;
@@ -126,7 +126,7 @@ function andarBahar(root) {
     spotRow);
 
   const msg = msgLine();
-  const bp = betPanel({ start: 25, min: 1, max: 2000, action: 'DEAL', onAction: deal });
+  const bp = betPanel({ start: 25, min: 1, action: 'DEAL', onAction: deal });
 
   function choose(k) {
     if (busy) return;
@@ -218,7 +218,7 @@ function teenPatti(root) {
   const btnFold = el('button.btn.btn-red', { type: 'button', onclick: () => decide(false) }, 'FOLD');
   const row = el('div.felt-actions', {}, btnPlay, btnFold);
   row.hidden = true;
-  const bp = betPanel({ start: 25, min: 1, max: 1000, label: 'BOOT', action: 'DEAL', onAction: deal });
+  const bp = betPanel({ start: 25, min: 1, label: 'BOOT', action: 'DEAL', onAction: deal });
   const BONUS = { 5: 8, 4: 5, 3: 2, 2: 1 };   // trail / pure seq / sequence / colour
 
   function deal() {
@@ -309,7 +309,7 @@ function casinoHoldem(root) {
   const btnFold = el('button.btn.btn-red', { type: 'button', onclick: () => decide(false) }, 'FOLD');
   const row = el('div.felt-actions', {}, btnCall, btnFold);
   row.hidden = true;
-  const bp = betPanel({ start: 25, min: 1, max: 1000, label: 'ANTE', action: 'DEAL', onAction: deal });
+  const bp = betPanel({ start: 25, min: 1, label: 'ANTE', action: 'DEAL', onAction: deal });
   /* ante odds by rank: straight 1:1 up to royal 100:1 */
   const ANTE_ODDS = [0, 0, 0, 0, 1, 2, 3, 10, 20, 100];
 
@@ -419,7 +419,7 @@ function bigSix(root) {
     print: ['Big Six Money Wheel', '54 segments - pays the odds shown on the segment'] });
   table.surface.append(wrap, spotRow);
 
-  const bp = betPanel({ start: 25, min: 1, max: 2000, action: 'SPIN', onAction: spin });
+  const bp = betPanel({ start: 25, min: 1, action: 'SPIN', onAction: spin });
 
   function choose(k) {
     if (busy) return;

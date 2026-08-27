@@ -7,14 +7,19 @@ import { celebrate, coinBurst, loseFx, shake } from './fx.js';
  * Bet stepper + quick buttons + primary action button.
  * Returns { node, get value, set value, lock(), unlock(), action, setAction }.
  */
-export function betPanel({ min = 1, max = 5000, start = 10, label = 'BET', action = 'PLAY',
+export function betPanel({ min = 1, start = 10, label = 'BET', action = 'PLAY',
                            actionClass = 'btn-gold', onAction, extra = [] } = {}) {
-  let value = clampBet(start, min, max);
+  /* There is no fixed table limit. The only ceiling is what the player actually
+     holds, re-read on every change so a top-up raises it immediately. When the
+     balance is below `min` the cap stays at `min` and take() reports the
+     shortfall, rather than silently offering an un-placeable bet. */
+  const cap = () => Math.max(min, wallet.balance);
+  let value = clampBet(start, min, cap());
 
   const input = el('input', { type: 'text', inputmode: 'decimal', value: fmt(value) });
   const sync = () => { input.value = fmt(value); readout.textContent = ''; };
 
-  const setValue = (v) => { value = clampBet(v, min, max); sync(); };
+  const setValue = (v) => { value = clampBet(v, min, cap()); sync(); };
 
   input.addEventListener('change', () => setValue(parseFloat(input.value.replace(/,/g, '')) || min));
   input.addEventListener('blur', sync);

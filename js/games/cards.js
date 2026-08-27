@@ -59,7 +59,7 @@ function blackjack({ decks, name, id, h17 = false }) {
     const actions = el('div.felt-actions', {}, btnHit, btnStand, btnDouble, btnSplit);
     actions.hidden = true;
 
-    const bp = betPanel({ start: 25, min: 1, max: 2000, action: 'DEAL', onAction: deal });
+    const bp = betPanel({ start: 25, min: 1, action: 'DEAL', onAction: deal });
 
     function d() {
       if (shoe.length < decks * 15) shoe = newShoe(decks);
@@ -282,7 +282,7 @@ function baccarat({ id, noComm = false }) {
     print: ['Baccarat - Punto Banco', 'Banker wins pay 5% commission - tie pays 8 to 1'] });
   table.surface.append(el('div.felt-row', {}, pSeat, bSeat), spotRow);
 
-  const bp = betPanel({ start: 25, min: 1, max: 2000, action: 'DEAL', onAction: play });
+  const bp = betPanel({ start: 25, min: 1, action: 'DEAL', onAction: play });
 
   async function play() {
     if (busy) return;
@@ -482,7 +482,7 @@ function videoPoker(id) {
       rowEls[k] = r; payRows.append(r);
     }
 
-    const bp = betPanel({ start: 25, min: 1, max: 1000, action: 'DEAL', onAction: go });
+    const bp = betPanel({ start: 25, min: 1, action: 'DEAL', onAction: go });
 
     function paint() {
       handRow.replaceChildren(...cards.map((c, i) => {
@@ -554,7 +554,7 @@ function casinoWar(root) {
   const btnSurr = el('button.btn', { type: 'button', onclick: () => resolveWar(false) }, 'SURRENDER (half back)');
   const warRow = el('div.felt-actions', {}, btnWar, btnSurr);
   warRow.hidden = true;
-  const bp = betPanel({ start: 25, min: 1, max: 2000, action: 'DEAL', onAction: play });
+  const bp = betPanel({ start: 25, min: 1, action: 'DEAL', onAction: play });
   const hv = (c) => (c.v === 1 ? 14 : c.v);
 
   function play() {
@@ -626,7 +626,7 @@ function threeCard(root) {
   const btnFold = el('button.btn.btn-red', { type: 'button', onclick: () => decide(false) }, 'FOLD');
   const row = el('div.felt-actions', {}, btnPlay, btnFold);
   row.hidden = true;
-  const bp = betPanel({ start: 25, min: 1, max: 1000, label: 'ANTE', action: 'DEAL', onAction: deal });
+  const bp = betPanel({ start: 25, min: 1, label: 'ANTE', action: 'DEAL', onAction: deal });
   const ANTE_BONUS = { 5: 5, 4: 4, 3: 1 };
 
   function deal() {
@@ -697,7 +697,7 @@ function caribbeanStud(root) {
   const btnFold = el('button.btn.btn-red', { type: 'button', onclick: () => decide(false) }, 'FOLD');
   const row = el('div.felt-actions', {}, btnRaise, btnFold);
   row.hidden = true;
-  const bp = betPanel({ start: 25, min: 1, max: 1000, label: 'ANTE', action: 'DEAL', onAction: deal });
+  const bp = betPanel({ start: 25, min: 1, label: 'ANTE', action: 'DEAL', onAction: deal });
   const ODDS = [1, 1, 2, 3, 4, 5, 7, 20, 50, 100];   // by evalPoker rank
 
   function deal() {
@@ -758,7 +758,7 @@ function redDog(root) {
   table.surface.append(spreadSeat, el('div.felt-row', {}, betSpot));
   const box = spreadSeat;
   const msg = msgLine();
-  const bp = betPanel({ start: 25, min: 1, max: 2000, action: 'DEAL', onAction: play });
+  const bp = betPanel({ start: 25, min: 1, action: 'DEAL', onAction: play });
   const hv = (c) => (c.v === 1 ? 14 : c.v);
   const SPREAD_PAY = { 1: 5, 2: 4, 3: 2 };
 
@@ -824,7 +824,7 @@ function hiLo(root) {
   const btnOut = el('button.btn.btn-gold', { type: 'button', onclick: cashOut }, 'CASH OUT');
   const row = el('div.felt-actions', {}, btnLo, btnHi, btnOut);
   row.hidden = true;
-  const bp = betPanel({ start: 25, min: 1, max: 2000, action: 'START', onAction: start });
+  const bp = betPanel({ start: 25, min: 1, action: 'START', onAction: start });
   const hv = (c) => (c.v === 1 ? 14 : c.v);
 
   function odds(kind) {

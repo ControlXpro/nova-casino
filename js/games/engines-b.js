@@ -27,7 +27,7 @@ export const streak = (t) => (root) => {
   const loBtn = el('button.btn.btn-red', { type: 'button' }, 'LOWER');
   hiBtn.addEventListener('click', () => call(1));
   loBtn.addEventListener('click', () => call(-1));
-  const bp = betPanel({ start: 25, min: 1, max: 2000, action: 'START', onAction: start,
+  const bp = betPanel({ start: 25, min: 1, action: 'START', onAction: start,
     extra: [el('div.field', {}, el('label', {}, 'CALL'), el('div.eng-pair', {}, hiBtn, loBtn))] });
 
   /* Ties go to the house on both calls, which is where part of the edge
@@ -140,7 +140,7 @@ export const wheelx = (t) => (root) => {
     profile = Object.keys(PROFILES)[i]; modes.select(i); build(); play('click');
     msg.set(`${PROFILES[profile].label} risk — top prize ${Math.max(...PROFILES[profile].segs)}×`, 'push');
   });
-  const bp = betPanel({ start: 25, min: 1, max: 2000, action: 'SPIN', onAction: spin });
+  const bp = betPanel({ start: 25, min: 1, action: 'SPIN', onAction: spin });
 
   async function spin() {
     if (busy) return;
@@ -199,7 +199,7 @@ export const dig = (t) => (root) => {
     if (live) return;
     hazards = [3, 5, 8, 12][i]; hazRow.select(i); paint(); play('click');
   });
-  const bp = betPanel({ start: 25, min: 1, max: 2000, action: 'DIG IN', onAction: start });
+  const bp = betPanel({ start: 25, min: 1, action: 'DIG IN', onAction: start });
 
   /* After `k` safe tiles the fair price is the inverse of the chance of having
      got that far: C(safe,k)/C(SIZE,k). Edge applied once at the end. */
@@ -308,7 +308,7 @@ export const ladder = (t) => (root) => {
 
   const upBtn = el('button.btn.btn-gold.btn-lg', { type: 'button' }, 'CLIMB');
   upBtn.addEventListener('click', climb);
-  const bp = betPanel({ start: 25, min: 1, max: 2000, action: 'START', onAction: start,
+  const bp = betPanel({ start: 25, min: 1, action: 'START', onAction: start,
     extra: [el('div.field', {}, el('label', {}, 'ASCEND'), upBtn)] });
   upBtn.disabled = true;
 
@@ -397,7 +397,7 @@ export const catchGame = (t) => (root) => {
   const odds = readout('PAYS', '—');
   const msg = msgLine();
   const hist = historyRow();
-  const bp = betPanel({ start: 25, min: 1, max: 2000, action: 'DROP', onAction: go });
+  const bp = betPanel({ start: 25, min: 1, action: 'DROP', onAction: go });
 
   function toggle(i) {
     if (busy) return;
@@ -467,7 +467,7 @@ export const safe = (t) => (root) => {
   const cur = readout('IF CORRECT', MULT[0].toFixed(2) + '×');
   const msg = msgLine();
   const hist = historyRow();
-  const bp = betPanel({ start: 25, min: 1, max: 2000, action: 'START', onAction: start });
+  const bp = betPanel({ start: 25, min: 1, action: 'START', onAction: start });
 
   const lockKeys = (v) => keys.forEach((k) => { k.disabled = v; });
 
@@ -554,7 +554,7 @@ export const burstGame = (t) => (root) => {
   });
   const msg = msgLine();
   const hist = historyRow();
-  const bp = betPanel({ start: 25, min: 1, max: 2000, action: 'BURST', onAction: go });
+  const bp = betPanel({ start: 25, min: 1, action: 'BURST', onAction: go });
 
   function toggle(i) {
     if (busy) return;
@@ -628,7 +628,7 @@ export const drawGame = (t) => (root) => {
       el('div.pt-row.tier-' + x.tone, {},
         el('span', {}, x.name),
         el('span', {}, `${(x.w / TOTAL * 100).toFixed(2)}%  ·  ${x.pay ? x.pay + '×' : 'no prize'}`)))));
-  const bp = betPanel({ start: 25, min: 1, max: 2000, action: 'DRAW', onAction: go });
+  const bp = betPanel({ start: 25, min: 1, action: 'DRAW', onAction: go });
 
   async function go() {
     if (busy) return;
@@ -683,7 +683,7 @@ export const trail = (t) => (root) => {
 
   const rollBtn = el('button.btn.btn-gold.btn-lg', { type: 'button' }, 'ROLL');
   rollBtn.addEventListener('click', roll);
-  const bp = betPanel({ start: 25, min: 1, max: 2000, action: 'START', onAction: start,
+  const bp = betPanel({ start: 25, min: 1, action: 'START', onAction: start,
     extra: [el('div.field', {}, el('label', {}, 'MOVE'), rollBtn)] });
   rollBtn.disabled = true;
 
@@ -767,7 +767,7 @@ export const fuse = (t) => (root) => {
   const multEl = readout('MULTIPLIER', '1.00×');
   const msg = msgLine();
   const hist = historyRow();
-  const bp = betPanel({ start: 25, min: 1, max: 2000, action: 'LIGHT IT', onAction: start });
+  const bp = betPanel({ start: 25, min: 1, action: 'LIGHT IT', onAction: start });
 
   /* Same distribution as a crash curve: 1% instant, otherwise 0.99/(1-u). */
   function drawEnd() {

@@ -43,7 +43,7 @@ export const aim = (t) => (root) => {
     msg.set(`${MODES[mode].label} — ${MODES[mode].note} · scores ${pct(chance())} of the time`, 'push');
   }
 
-  const bp = betPanel({ start: 25, min: 1, max: 2000, action: 'SHOOT', onAction: fire });
+  const bp = betPanel({ start: 25, min: 1, action: 'SHOOT', onAction: fire });
 
   async function fire() {
     if (busy) return;
@@ -115,7 +115,7 @@ export const picks = (t) => (root) => {
   const bank = readout('BANKED', '—');
   const msg = msgLine();
   const hist = historyRow();
-  const bp = betPanel({ start: 25, min: 1, max: 2000, action: 'OPEN THE FIRST', onAction: start });
+  const bp = betPanel({ start: 25, min: 1, action: 'OPEN THE FIRST', onAction: start });
 
   function start() {
     if (live) { cashOut(); return; }
@@ -210,7 +210,7 @@ export const path = (t) => (root) => {
   const hist = historyRow();
 
   const stepBtn = el('button.btn.btn-gold.btn-lg', { type: 'button' }, 'STEP');
-  const bp = betPanel({ start: 25, min: 1, max: 2000, action: 'START', onAction: start,
+  const bp = betPanel({ start: 25, min: 1, action: 'START', onAction: start,
     extra: [el('div.field', {}, el('label', {}, 'ADVANCE'), stepBtn)] });
   stepBtn.disabled = true;
   stepBtn.addEventListener('click', step);
@@ -298,7 +298,7 @@ export const pump = (t) => (root) => {
   const hist = historyRow();
 
   const pumpBtn = el('button.btn.btn-gold.btn-lg', { type: 'button' }, 'PUMP');
-  const bp = betPanel({ start: 25, min: 1, max: 2000, action: 'START', onAction: start,
+  const bp = betPanel({ start: 25, min: 1, action: 'START', onAction: start,
     extra: [el('div.field', {}, el('label', {}, 'INFLATE'), pumpBtn)] });
   pumpBtn.disabled = true;
   pumpBtn.addEventListener('click', doPump);
@@ -390,7 +390,7 @@ export const race = (t) => (root) => {
   });
   const msg = msgLine();
   const hist = historyRow();
-  const bp = betPanel({ start: 25, min: 1, max: 2000, action: 'RACE', onAction: run });
+  const bp = betPanel({ start: 25, min: 1, action: 'RACE', onAction: run });
 
   const paint = () => lanes.forEach((l, i) => l.classList.toggle('on', i === choice));
 
@@ -466,7 +466,7 @@ export const duel = (t) => (root) => {
 
   const msg = msgLine();
   const hist = historyRow();
-  const bp = betPanel({ start: 25, min: 1, max: 2000, action: 'FIGHT', onAction: fight });
+  const bp = betPanel({ start: 25, min: 1, action: 'FIGHT', onAction: fight });
 
   async function fight() {
     if (busy) return;
@@ -536,7 +536,7 @@ export const shuffleGame = (t) => (root) => {
   const odds = readout('PAYS', '—');
   const msg = msgLine();
   const hist = historyRow();
-  const bp = betPanel({ start: 25, min: 1, max: 2000, action: 'SHUFFLE', onAction: start });
+  const bp = betPanel({ start: 25, min: 1, action: 'SHUFFLE', onAction: start });
 
   const paintOdds = () => odds.set(fairMult(count).toFixed(2) + '×');
 
@@ -613,7 +613,7 @@ export const match3 = (t) => (root) => {
   });
   const msg = msgLine();
   const hist = historyRow();
-  const bp = betPanel({ start: 25, min: 1, max: 2000, action: 'REVEAL', onAction: go });
+  const bp = betPanel({ start: 25, min: 1, action: 'REVEAL', onAction: go });
 
   const paytable = el('div.paytable', {},
     el('h4', {}, 'THREE OF A KIND PAYS'),
@@ -678,7 +678,7 @@ export const wires = (t) => (root) => {
   const cur = readout('IF YOU CUT', '—');
   const msg = msgLine();
   const hist = historyRow();
-  const bp = betPanel({ start: 25, min: 1, max: 2000, action: 'START', onAction: start });
+  const bp = betPanel({ start: 25, min: 1, action: 'START', onAction: start });
 
   function build() {
     const n = ROUNDS[r];
@@ -771,7 +771,7 @@ export const spots = (t) => (root) => {
   const msg = msgLine();
   const hist = historyRow();
   const payRow = el('div.paytable');
-  const bp = betPanel({ start: 25, min: 1, max: 2000, action: 'DRAW', onAction: go });
+  const bp = betPanel({ start: 25, min: 1, action: 'DRAW', onAction: go });
 
   function toggle(i) {
     if (busy) return;

@@ -50,7 +50,7 @@ export function penalty(root) {
     el('span.pk-mult', {}, '—'));
 
   const msg = msgLine();
-  const bp = betPanel({ start: 25, min: 1, max: 2000, action: 'TAKE THE KICK', onAction: go });
+  const bp = betPanel({ start: 25, min: 1, action: 'TAKE THE KICK', onAction: go });
   const btnOut = el('button.btn.btn-gold.btn-lg', { type: 'button', onclick: cashOut }, 'CASH OUT');
   btnOut.hidden = true;
 

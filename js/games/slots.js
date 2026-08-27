@@ -273,7 +273,7 @@ function mountSlot(theme) {
       }));
 
     const bp = betPanel({
-      start: 20, min: 0.2, max: 2000, action: 'SPIN',
+      start: 20, min: 0.2, action: 'SPIN',
       onAction: () => doSpin(),
     });
 

@@ -95,7 +95,7 @@ function roulette({ id, order, american, laPartage = false, lightning = false })
     }
 
     const bp = betPanel({
-      start: 5, min: 1, max: 500, label: 'CHIP', action: 'SPIN', onAction: spin,
+      start: 5, min: 1, label: 'CHIP', action: 'SPIN', onAction: spin,
       extra: [el('div.field', {}, el('label', {}, 'BOARD'),
         el('div.quick', {},
           el('button', { type: 'button', onclick: clearBets }, 'CLEAR'),
@@ -263,7 +263,7 @@ function sicBo({ id = 'sic-bo', label = 'SIC BO — THREE DICE' } = {}) {
     ...[4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17].map((t) => ({ key: 'sum' + t, label: `SUM ${t}`, sub: SUM_PAY[t] + ':1' })),
   ];
   const picker = optGrid(OPTS, (k) => { choice = k; });
-  const bp = betPanel({ start: 25, min: 1, max: 1000, action: 'ROLL', onAction: roll });
+  const bp = betPanel({ start: 25, min: 1, action: 'ROLL', onAction: roll });
 
   async function roll() {
     if (busy) return;
@@ -326,7 +326,7 @@ function craps({ id = 'craps', label = 'CRAPS — LINE BETS' } = {}) {
     { key: 'dont', label: "DON'T PASS", sub: 'edge 1.36%' },
     { key: 'field', label: 'FIELD', sub: 'one roll' },
   ], (k) => { if (!point) sideChoice = k; else toast('Finish the current point first.'); });
-  const bp = betPanel({ start: 25, min: 1, max: 2000, action: 'ROLL', onAction: roll });
+  const bp = betPanel({ start: 25, min: 1, action: 'ROLL', onAction: roll });
 
   async function animate() {
     [...cubes.children].forEach((c) => c.classList.add('roll'));
@@ -450,7 +450,7 @@ function keno({ id, pay = KENO_PAY, label = 'KENO' }) {
   const drawnRow = el('div.kn-drawn');
   const machine = el('div.kn-machine', {}, drum, drawnRow);
   const bp = betPanel({
-    start: 10, min: 1, max: 1000, action: 'DRAW', onAction: play,
+    start: 10, min: 1, action: 'DRAW', onAction: play,
     extra: [el('div.field', {}, el('label', {}, 'PICKS'), el('div.quick', {},
       el('button', { type: 'button', onclick: quick }, 'QUICK PICK'),
       el('button', { type: 'button', onclick: clearPicks }, 'CLEAR')))],
@@ -531,7 +531,7 @@ function bingo({ id, max = 75, calls = 30, label = 'BINGO 75' }) {
   const cage = el('div.bg-cage', { 'aria-hidden': 'true' });
   const hall = el('div.bg-hall', {}, cage);
   const msg = msgLine();
-  const bp = betPanel({ start: 25, min: 1, max: 1000, action: 'BUY CARD & PLAY', onAction: play });
+  const bp = betPanel({ start: 25, min: 1, action: 'BUY CARD & PLAY', onAction: play });
 
   function newCard() {
     card = []; marks = [];
